@@ -2,14 +2,18 @@
 name: dependabot-triage
 description: Triage Dependabot security alerts for a GitHub repo with Jira integration
 argument-hint: "[owner/repo]"
-allowed-tools: Bash
+allowed-tools: Bash, mcp__plugin_atlassian_atlassian__searchJiraIssuesUsingJql, mcp__plugin_atlassian_atlassian__addCommentToJiraIssue, mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue, mcp__plugin_atlassian_atlassian__transitionJiraIssue, mcp__plugin_atlassian_atlassian__getAccessibleAtlassianResources
 ---
 
 Triage Dependabot security alerts for the GitHub repo: $ARGUMENTS
 
-**Reference:** See `~/.claude/skills/acli.md` for Atlassian CLI commands.
-
 Follow these steps carefully for each open alert. Do not batch — handle them one at a time.
+
+---
+
+## Step 0: Get Atlassian Cloud ID
+
+Before any Jira operations, call `getAccessibleAtlassianResources` to get the cloud ID. Use this cloud ID for all subsequent Jira MCP tool calls.
 
 ---
 
@@ -60,21 +64,23 @@ Confirm success or report failure before moving on.
 
 ## Step 4: Search Jira for an associated ticket
 
-After handling each alert (dismissed or skipped), search Jira for a related ticket using acli.
+After handling each alert (dismissed or skipped), search Jira for a related ticket using the `searchJiraIssuesUsingJql` MCP tool.
 
 IMPORTANT: Use `summary ~` instead of `text ~` because Jira's `text` field tokenizes CVE IDs
 (hyphens + numbers) incorrectly and returns no results. The `summary` field works reliably.
 
 First, search for the CVE and repo name together:
 
-```bash
-acli jira workitem search --jql 'summary ~ "<CVE-ID>" AND summary ~ "<repo-name>"'
+```
+jql: summary ~ "<CVE-ID>" AND summary ~ "<repo-name>"
+fields: ["summary", "status"]
 ```
 
 If no results, try a broader search with just the CVE:
 
-```bash
-acli jira workitem search --jql 'summary ~ "<CVE-ID>"'
+```
+jql: summary ~ "<CVE-ID>"
+fields: ["summary", "status"]
 ```
 
 Filter the results to find tickets that are not already Resolved/Done/Closed.
@@ -85,15 +91,14 @@ Filter the results to find tickets that are not already Resolved/Done/Closed.
 
 Show me the ticket key, summary, and current status. Then ask me if I want to transition it to Resolved.
 
-If I confirm, first add a comment explaining the GitHub dismiss reason, then transition:
+If I confirm, first add a comment using the `addCommentToJiraIssue` MCP tool:
 
-```bash
-acli jira workitem comment create --key "<TICKET-KEY>" --body "Dependabot alert #<number> (<package> <CVE-ID>) was dismissed in GitHub with reason: <reason>. Dismissed via Claude Code triage."
+```
+issueIdOrKey: "<TICKET-KEY>"
+commentBody: "Dependabot alert #<number> (<package> <CVE-ID>) was dismissed in GitHub with reason: <reason>. Dismissed via Claude Code triage."
 ```
 
-```bash
-acli jira workitem transition --key "<TICKET-KEY>" --status "Resolved" --yes
-```
+Then get available transitions using `getTransitionsForJiraIssue` to find the transition ID for "Resolved", and apply it using `transitionJiraIssue`.
 
 Only transition if I confirm.
 
