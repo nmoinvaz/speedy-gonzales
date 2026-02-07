@@ -36,4 +36,4 @@ Claude Code marketplace plugin that speeds up everyday dev workflows.
 ## Requirements
 
 - [GitHub CLI](https://cli.github.com/) (`gh`) - most commands
-- [Atlassian CLI](https://github.com/ankitpokhrel/jira-cli) (`acli`) - Jira integration (optional)
+- [Atlassian MCP](https://www.atlassian.com/) - Jira integration (optional)
