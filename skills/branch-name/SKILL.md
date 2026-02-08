@@ -10,6 +10,7 @@ Create a new branch following the repository's naming conventions:
    - Use AskUserQuestion with options:
      - "Feature branch"
      - "Bug fix branch"
+     - "Cleanup branch"
 
 2. **Analyze repository branch naming conventions**:
    - Get recent branch names:
