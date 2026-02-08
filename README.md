@@ -25,6 +25,13 @@ Claude Code marketplace plugin that speeds up everyday dev workflows.
 | `/dependabot-triage` | Triage Dependabot security alerts |
 | `/jira-fix-bug` | Fix a bug from a Jira issue |
 | `/learn` | Generate skills from web documentation |
+| `/cq-readability` | Analyze code readability and naming quality |
+| `/cq-duplication` | Detect code duplication and DRY violations |
+| `/cq-structure` | Analyze structure, complexity, and architecture |
+| `/cq-formatting` | Analyze formatting and style consistency |
+| `/cq-error-handling` | Analyze error handling and robustness |
+| `/cq-coupling` | Analyze module coupling and cohesion |
+| `/cq-review` | Run a full code quality review using 6 parallel agents |
 
 ## Skills
 
