@@ -138,12 +138,18 @@ If I confirm, first add a comment using the `addCommentToJiraIssue` MCP tool:
 
 ```
 issueIdOrKey: "<TICKET-KEY>"
-commentBody: "Dependabot alert #<number> (<package> <CVE-ID>) was <action: merged PR #X / dismissed with reason: <reason>> in GitHub. Triaged via Claude Code."
+commentBody: "Dependabot alert #<number> (<package> <CVE-ID>) was <action: merged via <PR-URL> / dismissed with reason: <reason>> in GitHub. Triaged via Claude Code."
 ```
 
 Then get available transitions using `getTransitionsForJiraIssue` to find the transition ID for "Resolved", and apply it using `transitionJiraIssue`.
 
 Only transition if I confirm.
+
+If a Dependabot PR was merged for this alert, also add a comment on the GitHub PR linking to the Jira ticket:
+
+```bash
+gh pr comment <pr-number> --repo <owner>/<repo> --body "Associated Jira ticket: <TICKET-KEY> (<ticket-summary>)"
+```
 
 ---
 
