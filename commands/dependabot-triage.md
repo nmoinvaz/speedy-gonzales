@@ -81,6 +81,12 @@ If the merge succeeds, the Dependabot alert should be automatically resolved by 
 gh api repos/<owner>/<repo>/dependabot/alerts/<number> --jq '.state'
 ```
 
+Then post a comment on the PR noting it was merged during triage:
+
+```bash
+gh pr comment <pr-number> --repo <owner>/<repo> --body "Merged via Claude Code dependabot-triage."
+```
+
 If the alert is still open after merging, mark it as fixed:
 
 ```bash
