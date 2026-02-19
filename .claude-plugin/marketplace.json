@@ -5,12 +5,12 @@
   },
   "metadata": {
     "description": "Claude Code marketplace plugin that speeds up everyday dev workflows.",
-    "version": "1.0.0"
+    "version": "1.0.4"
   },
   "plugins": [
     {
       "name": "arriba",
-      "version": "1.0.0",
+      "version": "1.0.4",
       "source": "./",
       "description": "Claude commands that speed up everyday dev workflows"
     }
