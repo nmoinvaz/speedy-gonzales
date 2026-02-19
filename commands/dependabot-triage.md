@@ -31,25 +31,68 @@ If there are no open alerts, tell me and stop.
 
 ## Step 2: For each open alert, one at a time
 
+### 2a: Check for an associated Dependabot PR
+
+Search for an open Dependabot pull request that addresses this alert:
+
+```bash
+gh pr list --repo <owner>/<repo> --state open --author app/dependabot --json number,title,url --jq '.[] | select(.title | test("<package-name>"; "i"))'
+```
+
+### 2b: Present the alert summary
+
 Present a brief summary including:
 - Alert number
 - Package name
 - Severity (critical / high / medium / low)
 - CVE ID
 - One-line description of the vulnerability
+- **Associated PR** (if found in 2a): PR number, title, and URL
 
 Then ask me what I want to do using AskUserQuestion. The options must be:
 
-1. **Dismiss: fix_started** — A fix has already been started
-2. **Dismiss: inaccurate** — This alert is inaccurate or incorrect
-3. **Dismiss: no_bandwidth** — No bandwidth to fix this
-4. **Dismiss: not_used** — This code is not actually used
-5. **Dismiss: tolerable_risk** — Risk is tolerable to this project
-6. **Skip** — Leave this alert open and move to the next one
+1. **Merge PR** _(only include this option if a Dependabot PR was found)_ — Merge the associated Dependabot PR to fix the alert
+2. **Dismiss: fix_started** — A fix has already been started
+3. **Dismiss: inaccurate** — This alert is inaccurate or incorrect
+4. **Dismiss: no_bandwidth** — No bandwidth to fix this
+5. **Dismiss: not_used** — This code is not actually used
+6. **Dismiss: tolerable_risk** — Risk is tolerable to this project
+7. **Skip** — Leave this alert open and move to the next one
 
 ---
 
-## Step 3: If I choose to dismiss, run the dismiss command
+## Step 3: If I choose to merge the PR
+
+First, approve the Dependabot PR (required by branch protection policies):
+
+```bash
+gh pr review <pr-number> --repo <owner>/<repo> --approve
+```
+
+Then merge using rebase:
+
+```bash
+gh pr merge <pr-number> --repo <owner>/<repo> --rebase
+```
+
+If the merge succeeds, the Dependabot alert should be automatically resolved by GitHub. Verify by checking the alert state:
+
+```bash
+gh api repos/<owner>/<repo>/dependabot/alerts/<number> --jq '.state'
+```
+
+If the alert is still open after merging, mark it as fixed:
+
+```bash
+gh api --method PATCH repos/<owner>/<repo>/dependabot/alerts/<number> \
+  -f state=fixed
+```
+
+Confirm success or report failure before moving on.
+
+---
+
+## Step 4: If I choose to dismiss, run the dismiss command
 
 ```bash
 gh api --method PATCH repos/<owner>/<repo>/dependabot/alerts/<number> \
@@ -62,9 +105,9 @@ Confirm success or report failure before moving on.
 
 ---
 
-## Step 4: Search Jira for an associated ticket
+## Step 5: Search Jira for an associated ticket
 
-After handling each alert (dismissed or skipped), search Jira for a related ticket using the `searchJiraIssuesUsingJql` MCP tool.
+After handling each alert (merged, dismissed, or skipped), search Jira for a related ticket using the `searchJiraIssuesUsingJql` MCP tool.
 
 IMPORTANT: Use `summary ~` instead of `text ~` because Jira's `text` field tokenizes CVE IDs
 (hyphens + numbers) incorrectly and returns no results. The `summary` field works reliably.
@@ -87,7 +130,7 @@ Filter the results to find tickets that are not already Resolved/Done/Closed.
 
 ---
 
-## Step 5: If a Jira ticket is found
+## Step 6: If a Jira ticket is found
 
 Show me the ticket key, summary, and current status. Then ask me if I want to transition it to Resolved.
 
@@ -95,7 +138,7 @@ If I confirm, first add a comment using the `addCommentToJiraIssue` MCP tool:
 
 ```
 issueIdOrKey: "<TICKET-KEY>"
-commentBody: "Dependabot alert #<number> (<package> <CVE-ID>) was dismissed in GitHub with reason: <reason>. Dismissed via Claude Code triage."
+commentBody: "Dependabot alert #<number> (<package> <CVE-ID>) was <action: merged PR #X / dismissed with reason: <reason>> in GitHub. Triaged via Claude Code."
 ```
 
 Then get available transitions using `getTransitionsForJiraIssue` to find the transition ID for "Resolved", and apply it using `transitionJiraIssue`.
@@ -104,9 +147,9 @@ Only transition if I confirm.
 
 ---
 
-## Step 6: Repeat
+## Step 7: Repeat
 
 Move to the next open alert and repeat from Step 2. After all alerts are processed, print a final summary table showing:
 - Each alert number and package
-- Action taken (dismissed with reason, or skipped)
+- Action taken (PR merged, dismissed with reason, or skipped)
 - Associated Jira ticket (if any) and whether it was transitioned
