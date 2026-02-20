@@ -69,7 +69,12 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
       git branch -D temp-rebase-{pr_number}
       ```
 
-6. Report the result to the user:
+6. After a successful rebase, comment on the PR:
+   ```bash
+   gh pr comment {pr_number} --repo {owner}/{repo} --body "Rebased with Claude Code."
+   ```
+
+7. Report the result to the user:
    - On success: Confirm the PR was rebased (and whether commits are signed)
    - On failure: Explain the error (common issues: conflicts exist, rebase not allowed, PR already up to date)
    - If conflicts occur during local rebase, clean up the worktree and inform the user they need to resolve conflicts manually
