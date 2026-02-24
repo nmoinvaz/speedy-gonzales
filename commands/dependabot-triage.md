@@ -2,7 +2,7 @@
 name: dependabot-triage
 description: Triage Dependabot security alerts for a GitHub repo with Jira integration
 argument-hint: "[owner/repo]"
-allowed-tools: Bash, mcp__plugin_atlassian_atlassian__searchJiraIssuesUsingJql, mcp__plugin_atlassian_atlassian__addCommentToJiraIssue, mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue, mcp__plugin_atlassian_atlassian__transitionJiraIssue, mcp__plugin_atlassian_atlassian__getAccessibleAtlassianResources
+allowed-tools: Bash
 ---
 
 Triage Dependabot security alerts for the GitHub repo: $ARGUMENTS
@@ -11,9 +11,11 @@ Follow these steps carefully for each open alert. Do not batch — handle them o
 
 ---
 
-## Step 0: Get Atlassian Cloud ID
+## Step 0: Verify acli authentication
 
-Before any Jira operations, call `getAccessibleAtlassianResources` to get the cloud ID. Use this cloud ID for all subsequent Jira MCP tool calls.
+Before any Jira operations, verify that `acli` is authenticated by running `acli jira auth status`. If not authenticated, tell the user to run `acli jira auth login --web` and stop.
+
+Refer to the `acli` skill for command syntax reference.
 
 ---
 
@@ -113,24 +115,12 @@ Confirm success or report failure before moving on.
 
 ## Step 5: Search Jira for an associated ticket
 
-After handling each alert (merged, dismissed, or skipped), search Jira for a related ticket using the `searchJiraIssuesUsingJql` MCP tool.
+After handling each alert (merged, dismissed, or skipped), search Jira for a related ticket.
 
 IMPORTANT: Use `summary ~` instead of `text ~` because Jira's `text` field tokenizes CVE IDs
 (hyphens + numbers) incorrectly and returns no results. The `summary` field works reliably.
 
-First, search for the CVE and repo name together:
-
-```
-jql: summary ~ "<CVE-ID>" AND summary ~ "<repo-name>"
-fields: ["summary", "status"]
-```
-
-If no results, try a broader search with just the CVE:
-
-```
-jql: summary ~ "<CVE-ID>"
-fields: ["summary", "status"]
-```
+First, search for the CVE and repo name together in the summary field. If no results, try a broader search with just the CVE.
 
 Filter the results to find tickets that are not already Resolved/Done/Closed.
 
@@ -140,14 +130,9 @@ Filter the results to find tickets that are not already Resolved/Done/Closed.
 
 Show me the ticket key, summary, and current status. Then ask me if I want to transition it to Resolved.
 
-If I confirm, first add a comment using the `addCommentToJiraIssue` MCP tool:
-
-```
-issueIdOrKey: "<TICKET-KEY>"
-commentBody: "Dependabot alert #<number> (<package> <CVE-ID>) was <action: merged via <PR-URL> / dismissed with reason: <reason>> in GitHub. Triaged via Claude Code."
-```
-
-Then get available transitions using `getTransitionsForJiraIssue` to find the transition ID for "Resolved", and apply it using `transitionJiraIssue`.
+If I confirm:
+1. Add a comment to the ticket describing the action taken (e.g., "Dependabot alert #N (package CVE-ID) was merged/dismissed in GitHub. Triaged via Claude Code.")
+2. Transition the issue to "Resolved"
 
 Only transition if I confirm.
 

@@ -14,6 +14,9 @@ $ARGUMENTS should be a Jira URL (e.g., https://company.atlassian.net/browse/PROJ
 
 ## Instructions
 
+Use `acli` for all Jira operations. Refer to the `acli` skill for command syntax reference.
+Before any Jira operations, verify that `acli` is authenticated by running `acli jira auth status`. If not authenticated, tell the user to run `acli jira auth login --web` and stop.
+
 1. **Extract issue key from argument**:
    - If $ARGUMENTS is a URL, extract the issue key from the `/browse/` part
    - If $ARGUMENTS is just a key (e.g., PROJ-123), use it directly
@@ -146,15 +149,12 @@ $ARGUMENTS should be a Jira URL (e.g., https://company.atlassian.net/browse/PROJ
 
 12. **Update Jira issue** (ask for permission first):
     - Ask user: "Would you like me to add a comment to the Jira issue?"
-    - If yes, add a comment with:
-      - Brief description of the fix
-      - Files changed
-      - Link to commit (if available)
-      - Reference to similar issues and related commits if relevant
+    - If yes, add a comment with a brief description of the fix, files changed, and link to commit
 
 13. **Ask about status transition**:
     - Ask user: "Would you like to transition this issue?"
     - Show available transitions and let user choose (e.g., "In Progress", "In Review", "Done")
+    - Transition the issue to the chosen status
 
 ## Important Notes
 
