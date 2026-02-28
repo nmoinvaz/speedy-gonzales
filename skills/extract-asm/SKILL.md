@@ -31,7 +31,11 @@ Examples:
    - Disassemble with: `objdump -d --no-show-raw-insn <file>.o`
 
    **If `.obj` object file (PE/COFF — Windows):**
-   - Disassemble with: `dumpbin /disasm <file>.obj`
+   - `dumpbin` requires the MSVC environment. Find the VS install path with vswhere, then run via cmd.exe:
+     ```
+     VSPATH=$(vswhere -latest -property installationPath)
+     cmd.exe /c "call \"${VSPATH}\VC\Auxiliary\Build\vcvarsall.bat\" amd64 >nul 2>&1 && dumpbin /disasm <file>.obj"
+     ```
 
    **If `.s` or `.asm` assembly file:**
    - Use directly.
@@ -69,4 +73,5 @@ Examples:
 ## General
 - Object files from CMake builds are typically at:
   - Unix: `build/CMakeFiles/<target>.dir/<source>.o`
-  - Windows: `build/CMakeFiles/<target>.dir/<config>/<source>.obj`
+  - Windows (Ninja): `build/CMakeFiles/<target>.dir/<source>.obj`
+  - Windows (VS generator): `build/CMakeFiles/<target>.dir/<config>/<source>.obj`
