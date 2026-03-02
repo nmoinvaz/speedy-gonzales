@@ -27,11 +27,12 @@ gh pr checks <number> --repo <owner>/<repo> --json name,state --jq '.[]'
 
 Categorize each PR into one of these groups:
 - **Ready to merge** — mergeable state is MERGEABLE and all checks have state = "SUCCESS"
-- **Not ready** — checks are failing (state = "FAILURE"), pending (state = "PENDING" or "QUEUED"), or PR has merge conflicts
+- **Needs rebase** — checks are passing (all states = "SUCCESS") but mergeable state is CONFLICTING or not MERGEABLE
+- **Not ready** — checks are failing (state = "FAILURE"), pending (state = "PENDING" or "QUEUED")
 
-Tell me how many total Dependabot PRs exist and how many are ready to merge.
-If none are ready, list the blocked ones with their reasons and stop.
-Only proceed with PRs that are ready to merge.
+Tell me how many total Dependabot PRs exist, how many are ready to merge, and how many need a rebase.
+If none are ready or rebaseable, list the blocked ones with their reasons and stop.
+Proceed with PRs that are ready to merge. PRs that need a rebase will be handled specially within lock-step groups (see below).
 
 ### Identify lock-step dependency groups
 
@@ -43,6 +44,8 @@ Some dependencies need to be updated together. Identify lock-step groups by look
 3. Are being updated to the same target version
 
 The matching version numbers (both current and target) are the strongest signal that packages belong together. Group these PRs together for presentation and merging. Present lock-step groups before individual PRs.
+
+**Lock-step groups with rebase-needed PRs:** If a lock-step group contains PRs where the first PR to merge is in the "Needs rebase" state, include the group in the presentation. The first PR in a lock-step group is the one that must merge first — subsequent PRs in the group typically conflict because they touch the same lock file. Mark these groups with a 🔄 indicator.
 
 ---
 
@@ -57,8 +60,8 @@ If this is a lock-step group, fetch details for all PRs in the group and present
    `<old-version>` → `<new-version>`  (<semver-change: patch | minor | major>)
 
    Packages:
-   - <package-1> (PR #<number>)
-   - <package-2> (PR #<number>)
+   - <package-1> (PR #<number>) — Ready ✅
+   - <package-2> (PR #<number>) — Needs rebase 🔄
    - ...
 
    Changes (combined):
@@ -69,7 +72,9 @@ If this is a lock-step group, fetch details for all PRs in the group and present
    - Total files changed: <count> (<additions> additions, <deletions> deletions)
 ```
 
-Then ask what to do using AskUserQuestion with options: **Merge all**, **Skip all**, **Stop**.
+If all PRs in the group are ready, ask with options: **Merge all**, **Skip all**, **Stop**.
+
+If the first PR to merge needs a rebase, ask with options: **Rebase & auto-merge all**, **Skip all**, **Stop**.
 
 ---
 
@@ -129,7 +134,7 @@ Options:
 
 ## Step 4: If merging, execute the merge
 
-### For lock-step groups
+### For lock-step groups — all ready
 
 Merge all PRs in the group sequentially. For each PR in the group:
 ```bash
@@ -139,6 +144,24 @@ gh pr merge <number> --repo <owner>/<repo> --rebase --delete-branch
 ```
 
 Wait for each merge to complete before starting the next one (to avoid conflicts). Report the status of each merge, then confirm overall success or report any failures.
+
+### For lock-step groups — rebase & auto-merge
+
+When the user chose **Rebase & auto-merge all**, the first PR in the group needs a Dependabot rebase before it can merge. Handle this as follows:
+
+1. **Approve and enable auto-merge on all PRs in the group** (in parallel is fine):
+   ```bash
+   gh pr comment <number> --repo <owner>/<repo> --body "Reviewed and approved with the help of Claude Code. (Lock-step update with <other-packages>)"
+   gh pr review <number> --repo <owner>/<repo> --approve
+   gh pr merge <number> --repo <owner>/<repo> --rebase --delete-branch --auto
+   ```
+
+2. **Trigger Dependabot rebase on the first PR** (the one with the merge conflict):
+   ```bash
+   gh pr comment <number> --repo <owner>/<repo> --body "@dependabot rebase"
+   ```
+
+3. **Report the status**: Tell the user that auto-merge has been enabled on all PRs in the group and a rebase has been requested on the first PR. Explain that once Dependabot rebases and CI passes, the PRs will merge automatically in sequence (each subsequent PR will be rebased by Dependabot as the previous one merges).
 
 ### For individual PRs
 
@@ -172,7 +195,7 @@ Dependabot PR Merge Summary — <owner>/<repo>
 Lock-step groups:
 Group            PRs                   Version Change        Action
 ─────            ───                   ──────────────        ──────
-<prefix>         #<n1>, #<n2>, ...     <old> → <new>         Merged all / Skipped all
+<prefix>         #<n1>, #<n2>, ...     <old> → <new>         Merged all / Rebase & auto-merge / Skipped all
 
 Individual PRs:
 PR#   Package              Version Change        Action
