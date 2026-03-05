@@ -22,7 +22,11 @@ Rerun all failed workflow runs for the given GitHub PR: $ARGUMENTS
    gh run list --repo <owner/repo> --commit <sha> --json databaseId,name,conclusion,status
    ```
 
-4. Identify workflows with conclusion "failure" or "cancelled". If there are none, report that all workflows are passing or pending.
+4. Identify workflows with conclusion "failure" or "cancelled". If all workflows are still "queued" or "in_progress" with no failures, check GitHub Actions status before reporting:
+   ```bash
+   curl -s https://www.githubstatus.com/api/v2/components.json | jq '.components[] | select(.name == "Actions") | {name, status}'
+   ```
+   If Actions is degraded or has a major outage, inform the user that GitHub Actions is experiencing issues and their runs may be stuck. Otherwise, report that all workflows are passing or pending.
 
 5. For each failed or cancelled workflow run, get the jobs:
    ```bash
