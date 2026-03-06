@@ -18,10 +18,11 @@ Analyze the staged changes and generate commit message options:
 
 3. Search staged changes for ticket IDs (patterns like PROJ-123, D4T-123, etc.)
 
-4. Generate 3 commit message options. Each option should have:
+4. Generate 3 distinct commit message options. Each option should use a different verb and framing — not rephrase the same sentence. Each option should have:
    - **Title**:
-     - Clear and concise summary
      - Under 72 characters
+     - Lead with a strong action verb (e.g., Add, Fix, Refactor, Remove, Update, Replace, Extract, Simplify, Improve)
+     - State what was done, not what the code does — e.g., "Add retry logic to API client" not "API client retries on failure"
    - **Body**:
      - 1-3 sentences providing non-obvious value
      - Elaborate on the changes beyond what the title conveys
