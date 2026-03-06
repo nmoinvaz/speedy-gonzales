@@ -120,6 +120,93 @@ acli jira workitem edit --key PROJ-123 --summary "Updated summary"
 acli jira workitem edit --key PROJ-123 --assignee "@me"
 ```
 
+## ADF Formatting (Rich Text Descriptions)
+
+The `--description` and `--description-file` flags only accept plain text. To set a rich-text description with headings, code blocks, lists, etc., use `--from-json` with Atlassian Document Format (ADF).
+
+Generate a sample JSON template:
+
+```bash
+acli jira workitem create --generate-json
+acli jira workitem edit --generate-json
+```
+
+### Creating with ADF
+
+Write a JSON file with the ADF `description` field, then use `--from-json`:
+
+```bash
+acli jira workitem create --from-json workitem.json
+```
+
+### Editing with ADF
+
+Write a JSON file with `issues` and `description` fields:
+
+```json
+{
+  "issues": ["PROJ-123"],
+  "description": {
+    "type": "doc",
+    "version": 1,
+    "content": [
+      {
+        "type": "heading",
+        "attrs": {"level": 2},
+        "content": [{"type": "text", "text": "Section Title"}]
+      },
+      {
+        "type": "paragraph",
+        "content": [
+          {"type": "text", "text": "Normal text and "},
+          {"type": "text", "text": "inline code", "marks": [{"type": "code"}]},
+          {"type": "text", "text": " in a paragraph."}
+        ]
+      },
+      {
+        "type": "codeBlock",
+        "attrs": {"language": "json"},
+        "content": [{"type": "text", "text": "{\"key\": \"value\"}"}]
+      },
+      {
+        "type": "bulletList",
+        "content": [
+          {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Bullet item"}]}]}
+        ]
+      },
+      {
+        "type": "orderedList",
+        "content": [
+          {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Numbered item"}]}]}
+        ]
+      }
+    ]
+  }
+}
+```
+
+Then apply:
+
+```bash
+acli jira workitem edit --from-json workitem.json --yes
+```
+
+### ADF Node Reference
+
+| Node | Usage |
+|---|---|
+| `heading` | `attrs.level`: 1-6 |
+| `paragraph` | Container for text nodes |
+| `codeBlock` | `attrs.language`: json, bash, etc. |
+| `bulletList` | Contains `listItem` nodes |
+| `orderedList` | Contains `listItem` nodes |
+| `text` | `marks`: `code`, `strong`, `em`, `link` |
+
+### Known Limitations
+
+- `--description` and `--description-file` do NOT render wiki markup or markdown — they produce plain text only
+- Comment creation (`comment create`) does not support ADF; comment update does via `--body-adf`
+
 ## List Projects
 
 ```bash
