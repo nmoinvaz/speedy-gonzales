@@ -25,30 +25,36 @@ Examples:
 
 ## Steps
 
-1. Obtain assembly from the input:
+1. Extract assembly for the function from the input:
 
    **If `.o` object file (Mach-O / ELF):**
-   - Disassemble with: `objdump -d --no-show-raw-insn <file>.o`
+   - On macOS, use `llvm-objdump` (ships with Xcode). Mach-O symbols have a `_` prefix:
+     ```
+     llvm-objdump --disassemble-symbols=_<function_name> --no-show-raw-insn <file>.o
+     ```
+   - On Linux, use GNU objdump (binutils 2.32+):
+     ```
+     objdump --disassemble=<function_name> --no-show-raw-insn <file>.o
+     ```
 
    **If `.obj` object file (PE/COFF — Windows):**
-   - `dumpbin` requires the MSVC environment. Find the VS install path with vswhere, then run via cmd.exe:
+   - Prefer `llvm-objdump` (ships with VS LLVM/clang workload or standalone LLVM install):
+     ```
+     llvm-objdump --disassemble-symbols=<function_name> --no-show-raw-insn <file>.obj
+     ```
+   - Fallback to `dumpbin` if `llvm-objdump` is not available. `dumpbin` requires the MSVC environment:
      ```
      VSPATH=$(vswhere -latest -property installationPath)
      cmd.exe /c "call \"${VSPATH}\VC\Auxiliary\Build\vcvarsall.bat\" amd64 >nul 2>&1 && dumpbin /disasm <file>.obj"
      ```
+     Then extract the named function: find `<function_name>:` label, collect until the next label or summary line.
 
    **If `.s` or `.asm` assembly file:**
-   - Use directly.
+   - Read the file and extract the named function manually:
+     - **Mach-O:** Find `_<function_name>:`, collect until next `^_[a-zA-Z]` label (excluding `_Ltmp`, `_LCFI`, `_LBB` prefixes).
+     - **ELF/other:** Find `<function_name>:`, collect until the next function label.
 
-2. Extract the named function:
-
-   **Mach-O:** Find `_<function_name>:`, collect until next `^_[a-zA-Z]` label (excluding `_Ltmp`, `_LCFI`, `_LBB` prefixes).
-
-   **ELF:** Find `<function_name>:` in objdump output, collect until the next function header.
-
-   **PE/COFF (dumpbin):** Find `<function_name>:` label, collect until the next label or summary line.
-
-   Then for all formats:
+2. From the extracted output:
    - Filter out assembler directives (`.` prefix), comments (`#`, `;`, `//`, `@`), and blank lines
    - Keep only instruction lines
 
