@@ -11,10 +11,7 @@ Extract the assembly of a specific function from an object file or assembly file
 ## Prerequisites
 The input must be a compiled object file (`.o` or `.obj`) or assembly file (`.s` or `.asm`). If you have source code, compile it first (e.g. via CMake build or standalone `clang -S`).
 
-## Usage
-Invoke with: the input file and function name.
-
-Arguments:
+## Arguments
 - `$1` = input file (`.o`, `.obj`, `.s`, or `.asm`)
 - `$2` = function name
 
@@ -25,59 +22,51 @@ Examples:
 
 ## Steps
 
-1. Extract assembly for the function from the input:
+1. **Extract assembly** for the function based on file type:
 
-   **If `.o` object file (Mach-O / ELF):**
-   - On macOS, use `llvm-objdump` (ships with Xcode). Mach-O symbols have a `_` prefix:
-     ```
-     llvm-objdump --disassemble-symbols=_<function_name> --no-show-raw-insn <file>.o
-     ```
-   - On Linux, use GNU objdump (binutils 2.32+):
-     ```
-     objdump --disassemble=<function_name> --no-show-raw-insn <file>.o
-     ```
+   | Platform | File | Command |
+   |----------|------|---------|
+   | macOS | `.o` | `llvm-objdump --disassemble-symbols=_<name> --no-show-raw-insn <file>` |
+   | Linux | `.o` | `objdump --disassemble=<name> --no-show-raw-insn <file>` |
+   | Windows | `.obj` | `llvm-objdump --disassemble-symbols=<name> --no-show-raw-insn <file>` |
 
-   **If `.obj` object file (PE/COFF — Windows):**
-   - Prefer `llvm-objdump` (ships with VS LLVM/clang workload or standalone LLVM install):
-     ```
-     llvm-objdump --disassemble-symbols=<function_name> --no-show-raw-insn <file>.obj
-     ```
-   - Fallback to `dumpbin` if `llvm-objdump` is not available. `dumpbin` requires the MSVC environment:
+   Symbol names differ by platform — use this when passing to `--disassemble-symbols` or searching in `.s` files:
+
+   | Platform | C function `foo` | C++ function `foo` |
+   |----------|------------------|--------------------|
+   | macOS (Mach-O) | `_foo` | `_Z3foov` (Itanium mangled, `_` prefixed) |
+   | Linux (ELF) | `foo` | `_Z3foov` (Itanium mangled) |
+   | Windows (PE/COFF) | `foo` | `?foo@@YAXXZ` (MSVC decorated) |
+
+   Notes:
+   - macOS `llvm-objdump` ships with Xcode.
+   - Linux requires GNU binutils 2.32+.
+   - Windows: if `llvm-objdump` is not available, fall back to `dumpbin`:
      ```
      VSPATH=$(vswhere -latest -property installationPath)
      cmd.exe /c "call \"${VSPATH}\VC\Auxiliary\Build\vcvarsall.bat\" amd64 >nul 2>&1 && dumpbin /disasm <file>.obj"
      ```
-     Then extract the named function: find `<function_name>:` label, collect until the next label or summary line.
+     Then manually extract the function: find `<function_name>:` label, collect until the next label or summary line.
 
-   **If `.s` or `.asm` assembly file:**
-   - Read the file and extract the named function manually:
-     - **Mach-O:** Find `_<function_name>:`, collect until next `^_[a-zA-Z]` label (excluding `_Ltmp`, `_LCFI`, `_LBB` prefixes).
-     - **ELF/other:** Find `<function_name>:`, collect until the next function label.
+   **For `.s` or `.asm` files:** Read the file and extract manually:
+   - **Mach-O:** Find `_<function_name>:`, collect until next `^_[a-zA-Z]` label (excluding `_Ltmp`, `_LCFI`, `_LBB` prefixes).
+   - **ELF/other:** Find `<function_name>:`, collect until the next function label.
 
-2. From the extracted output:
+2. **Clean up** the extracted output:
    - Filter out assembler directives (`.` prefix), comments (`#`, `;`, `//`, `@`), and blank lines
    - Keep only instruction lines
 
-3. Output the extracted assembly to stdout. Print a summary line with the instruction count.
+3. **Output** the assembly to stdout with a summary line showing the instruction count.
 
 ## Architecture Notes
 
-### x86-64
-- `leaq` instructions with `(%rip)` are PC-relative address computations, not memory loads.
-- Memory operands use `offset(%reg)` syntax (e.g. `168(%rdi)` loads from rdi+168).
+| Architecture | Key details |
+|-------------|-------------|
+| **x86-64** | `offset(%reg)` memory syntax. `leaq (%rip)` is PC-relative, not a load. |
+| **AArch64** | `[reg, #offset]` memory syntax. Loads: `ldr`, `ldur`, `ldp`, `ldrb`, `ldrh`, `ldrsw`. Stores: `str`, `stur`, `stp`, `strb`, `strh`. Apple Silicon compiles natively. |
+| **x86-64 (MSVC)** | Intel syntax (dest first): `mov rax, [rcx+168]`. Args in `rcx`, `rdx`, `r8`, `r9`. C++ names may be decorated (`?name@@...`). |
 
-### AArch64
-- Memory operands use `[reg, #offset]` syntax (e.g. `[x0, #168]` loads from x0+168).
-- Load instructions: `ldr`, `ldur`, `ldp`, `ldrb`, `ldrh`, `ldrsw`. Store: `str`, `stur`, `stp`, `strb`, `strh`.
-- On Apple Silicon this compiles natively — no cross-compilation needed.
-
-### x86-64 (Windows/MSVC)
-- Uses Intel syntax by default (destination first): `mov rax, [rcx+168]`.
-- Calling convention: first four args in `rcx`, `rdx`, `r8`, `r9` (not `rdi`, `rsi` like SysV).
-- Function names may be decorated (e.g. `?name@@...` for C++). C functions are undecorated.
-
-## General
-- Object files from CMake builds are typically at:
-  - Unix: `build/CMakeFiles/<target>.dir/<source>.o`
-  - Windows (Ninja): `build/CMakeFiles/<target>.dir/<source>.obj`
-  - Windows (VS generator): `build/CMakeFiles/<target>.dir/<config>/<source>.obj`
+## CMake Build Paths
+- Unix: `build/CMakeFiles/<target>.dir/<source>.o`
+- Windows (Ninja): `build/CMakeFiles/<target>.dir/<source>.obj`
+- Windows (VS): `build/CMakeFiles/<target>.dir/<config>/<source>.obj`
