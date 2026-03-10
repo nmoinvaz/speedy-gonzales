@@ -4,21 +4,21 @@ description: Analyze staged git changes and generate commit message options with
 allowed-tools: Bash
 ---
 
-# Commit message format
+# Commit message guidelines
 
-Each commit message has a title and body.
+Each commit message has a title and body, separated by a blank line. Match the existing commit formatting in the repository first; use these defaults where the repo has no clear convention.
 
 **Title**:
-- Under 72 characters
+- Aim for 50 characters, hard limit of 72 (keeps messages scannable in `git log --oneline` and avoids truncation)
+- Use the imperative mood — write as a command, not a description. The title should complete the sentence: "If applied, this commit will ___"
 - Lead with a strong action verb (e.g., Add, Fix, Refactor, Remove, Update, Replace, Extract, Simplify, Improve)
-- State what was done, not what the code does — e.g., "Add retry logic to API client" not "API client retries on failure"
+- Capitalize the first word and omit trailing periods
 
 **Body**:
-- 1-3 sentences providing non-obvious value
-- Elaborate on the changes beyond what the title conveys
+- Explain *what* changed and *why*, not *how* — the diff shows the how
+- 1-3 sentences providing context, motivation, or consequences not evident from the title
 - Each sentence should add depth or highlight a distinct aspect of the change
-- Explain the "why" or technical context not evident from the title
-- Word-break wrapped at 80 characters max per line
+- Wrap lines at 72 characters for readability in terminals and git tools
 
 # Workflow
 
