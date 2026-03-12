@@ -1,57 +1,76 @@
 ---
 name: gh-retry
-description: Rerun all failed and cancelled workflow runs for a GitHub PR
-argument-hint: "[PR number, URL, or reference]"
+description: Rerun all failed and cancelled workflow runs for a GitHub PR or all my PRs in a repo
+argument-hint: "[PR number/URL/reference, or repo URL/owner/repo]"
 allowed-tools: Bash
 ---
 
-Rerun all failed workflow runs for the given GitHub PR: $ARGUMENTS
+Rerun all failed workflow runs: $ARGUMENTS
 
-1. Parse the PR identifier from the arguments. It can be:
-   - A PR number (e.g., `123`)
-   - A PR URL (e.g., `https://github.com/owner/repo/pull/123`)
-   - A PR reference with repo (e.g., `owner/repo#123`)
+## Step 1: Determine mode and collect PRs
 
-2. Get the head SHA of the PR:
-   ```bash
-   gh pr view <pr> --json headRefOid -q .headRefOid
-   ```
+Parse the argument to determine if this is a **single PR** or **all my PRs in a repo**:
 
-3. List all workflow runs for that commit SHA:
-   ```bash
-   gh run list --repo <owner/repo> --commit <sha> --json databaseId,name,conclusion,status
-   ```
+- **Single PR**: A PR number (e.g., `123`), PR URL (e.g., `https://github.com/owner/repo/pull/123`), or PR reference (e.g., `owner/repo#123`)
+- **Repo-wide**: A repo URL (e.g., `https://github.com/owner/repo`), or `owner/repo` without a PR number — list all open PRs by the current user:
+  ```bash
+  gh pr list --repo <owner/repo> --author @me --json number,title,headRefOid
+  ```
 
-4. Identify workflows with conclusion "failure" or "cancelled". If all workflows are still "queued" or "in_progress" with no failures, check GitHub Actions status before reporting:
-   ```bash
-   curl -s https://www.githubstatus.com/api/v2/components.json | jq '.components[] | select(.name == "Actions") | {name, status}'
-   ```
-   If Actions is degraded or has a major outage, inform the user that GitHub Actions is experiencing issues and their runs may be stuck. Otherwise, report that all workflows are passing or pending.
+## Step 2: For each PR, get the head SHA
 
-5. For each failed or cancelled workflow run, get the jobs:
-   ```bash
-   gh run view <run-id> --repo <owner/repo> --json jobs --jq '.jobs[] | {name, conclusion}'
-   ```
+```bash
+gh pr view <pr> --json headRefOid -q .headRefOid
+```
 
-6. Display a tree showing what will be rerun, then ask for confirmation:
-   ```
-   Workflows to rerun:
-   ├── **Build** (`21610828075`)
-   │   ├── Build - Ubuntu (failure)
-   │   ├── Build - Windows (failure)
-   │   └── Build - macOS (failure)
-   └── **Coverage** (`21610828076`)
-       └── Coverage - Windows (failure)
+## Step 3: List all workflow runs for that commit SHA
 
-   Proceed with rerun?
-   ```
-   - Workflow names should be **bold**
-   - Run IDs should be in `backticks`
-   - Only show jobs with conclusion "failure" or "cancelled" in the tree (these are the ones that will be rerun)
+```bash
+gh run list --repo <owner/repo> --commit <sha> --json databaseId,name,conclusion,status
+```
 
-7. Once confirmed, for each workflow rerun only the failed jobs:
-   ```bash
-   gh run rerun <run-id> --repo <owner/repo> --failed
-   ```
+## Step 4: Identify failures
 
-8. Report what was rerun.
+Identify workflows with conclusion "failure" or "cancelled". If all workflows are still "queued" or "in_progress" with no failures, check GitHub Actions status before reporting:
+```bash
+curl -s https://www.githubstatus.com/api/v2/components.json | jq '.components[] | select(.name == "Actions") | {name, status}'
+```
+If Actions is degraded or has a major outage, inform the user that GitHub Actions is experiencing issues and their runs may be stuck. Otherwise, report that all workflows are passing or pending.
+
+## Step 5: Get failed jobs for each failed workflow run
+
+```bash
+gh run view <run-id> --repo <owner/repo> --json jobs --jq '.jobs[] | {name, conclusion}'
+```
+
+## Step 6: Display a tree showing what will be rerun, then ask for confirmation
+
+Always group by PR:
+
+```
+Workflows to rerun:
+PR #123 - Add feature X
+├── **Build** (`21610828075`)
+│   ├── Build - Ubuntu (failure)
+│   ├── Build - Windows (failure)
+│   └── Build - macOS (failure)
+└── **Coverage** (`21610828076`)
+    └── Coverage - Windows (failure)
+PR #456 - Fix bug Y
+└── **Orchestrator** (`21610828077`)
+    └── Coverage - Windows (failure)
+
+Proceed with rerun?
+```
+- Workflow names should be **bold**
+- Run IDs should be in `backticks`
+- Only show jobs with conclusion "failure" or "cancelled" in the tree (these are the ones that will be rerun)
+
+## Step 7: Rerun failed jobs
+
+Once confirmed, for each workflow rerun only the failed jobs:
+```bash
+gh run rerun <run-id> --repo <owner/repo> --failed
+```
+
+## Step 8: Report what was rerun
