@@ -16,6 +16,7 @@ Each commit message has a title and body, separated by a blank line. Match the e
 
 **Body**:
 - Explain *what* changed and *why*, not *how* — the diff shows the how
+- Only describe the final outcome; exclude investigative steps, failed attempts, or debugging detours from the conversation that led to the change
 - 1-3 sentences providing context, motivation, or consequences not evident from the title
 - Each sentence should add depth or highlight a distinct aspect of the change
 - Wrap lines at 72 characters for readability in terminals and git tools
