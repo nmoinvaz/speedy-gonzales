@@ -43,7 +43,7 @@ If Actions is degraded or has a major outage, inform the user that GitHub Action
 gh run view <run-id> --repo <owner/repo> --json jobs --jq '.jobs[] | {name, conclusion}'
 ```
 
-## Step 6: Display a tree showing what will be rerun, then ask for confirmation
+## Step 6: Display a tree and rerun failed jobs
 
 Always group by PR:
 
@@ -59,18 +59,14 @@ PR #123 - Add feature X
 PR #456 - Fix bug Y
 └── **Orchestrator** (`21610828077`)
     └── Coverage - Windows (failure)
-
-Proceed with rerun?
 ```
 - Workflow names should be **bold**
 - Run IDs should be in `backticks`
 - Only show jobs with conclusion "failure" or "cancelled" in the tree (these are the ones that will be rerun)
 
-## Step 7: Rerun failed jobs
-
-Once confirmed, for each workflow rerun only the failed jobs:
+Immediately rerun without asking for confirmation (rerunning is non-destructive):
 ```bash
 gh run rerun <run-id> --repo <owner/repo> --failed
 ```
 
-## Step 8: Report what was rerun
+## Step 7: Report what was rerun
