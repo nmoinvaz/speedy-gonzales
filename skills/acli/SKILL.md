@@ -12,6 +12,16 @@ Common `acli` commands for Jira operations used across this project's workflows.
 - `acli` must be installed and authenticated: `acli jira auth login --web`
 - Check auth status: `acli jira auth status`
 
+## Key Flag for Subcommands
+
+The `view` command accepts the issue key as a positional argument, but subcommands like `comment list`, `comment create`, `transition`, `edit`, etc. require the `--key` flag:
+
+```bash
+acli jira workitem view PROJ-123                          # positional OK
+acli jira workitem comment list --key PROJ-123            # --key required
+acli jira workitem comment create --key PROJ-123 --body …  # --key required
+```
+
 ## View Issue Details
 
 ```bash
@@ -79,6 +89,12 @@ acli jira workitem comment create --key PROJ-123 --body-file comment.txt
 ```
 
 ## List Comments on Issue
+
+```bash
+acli jira workitem comment list --key PROJ-123 --json
+```
+
+Or via the view command:
 
 ```bash
 acli jira workitem view PROJ-123 --fields "comment" --json
