@@ -21,6 +21,12 @@ Each commit message has a title and body, separated by a blank line. Match the e
 - Each sentence should add depth or highlight a distinct aspect of the change
 - Wrap lines at 72 characters for readability in terminals and git tools
 
+**Voice** (inspired by Priestley, Locke, and Paine):
+- First sentence of the body states the reasoning plainly — what prompted the change and what it replaces (Locke: define before you argue)
+- Acknowledge trade-offs or open questions honestly where they exist, without hedging for the sake of it (Priestley: reason alongside the reader)
+- Use short, direct sentences and concrete language — no jargon for its own sake (Paine: common words, precisely deployed)
+- Clear thinking produces clear writing; if the message is hard to write, the change may need to be broken up
+
 # Workflow
 
 1. Get the staged diff for analysis:
