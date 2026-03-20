@@ -22,6 +22,7 @@ Create or manage a GitHub Pull Request for the current branch:
        ```
      - Analyze all commits on this branch vs the base branch to generate a PR title and description
      - Write the PR description as a concise paragraph explaining the change (not bullet points)
+     - **Title and voice**: Read and follow the guidelines in `skills/commit-msg/SKILL.md` for the PR title and writing voice
      - Do not include a test plan section in the PR description
      - At the bottom of the PR description, add: "Summary generated with Claude Code."
      - Create the PR:
