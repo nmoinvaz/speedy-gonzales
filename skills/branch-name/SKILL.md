@@ -1,7 +1,6 @@
 ---
 name: branch
 description: Create a new git branch with naming conventions based on repository patterns
-allowed-tools: Bash
 ---
 
 Create a new branch following the repository's naming conventions:

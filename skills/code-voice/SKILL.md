@@ -1,7 +1,6 @@
 ---
 name: code-voice
 description: Voice and style guidelines for writing commit messages, PR summaries, and other project prose
-allowed-tools: ""
 ---
 
 # Voice guidelines
