@@ -1,7 +1,6 @@
 ---
 name: commit-msg
 description: Analyze staged git changes and generate commit message options with title and body
-allowed-tools: Bash
 ---
 
 # Commit message guidelines
