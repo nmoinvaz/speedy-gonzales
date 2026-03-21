@@ -1,7 +1,6 @@
 ---
 name: gist-config-sync
 description: Sync project config files (.claude/CLAUDE.md, .vscode/settings.json, .vscode/launch.json) to/from a GitHub gist
-allowed-tools: Bash, Read, Grep
 ---
 
 Before syncing, scan each file for passwords, API keys, tokens, or
