@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # config-sync: Sync project config files to/from a single GitHub gist.
 #
-# Usage: config-sync.sh [--name NAME] [--root DIR] [FILE...]
+# Usage: config-sync.sh [--name NAME] [--root DIR] [--private] [FILE...]
 #
 # Options:
 #   --name NAME   Gist name prefix (default: basename of root dir)
 #   --root DIR    Root directory for relative paths (default: git root or cwd)
-#   FILE...       Files to sync, relative to root (default: project config set)
+#   --private     Create the gist as secret instead of public
+#   FILE...       Files to sync, relative to root
 #
 # Gist naming:   "<name> config-sync"
 # Gist filenames: <name>+<path> with + as dir separator
@@ -19,11 +20,13 @@ set -euo pipefail
 custom_name=""
 custom_root=""
 custom_files=()
+gist_public="true"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --name) custom_name="$2"; shift 2 ;;
         --root) custom_root="$2"; shift 2 ;;
+        --private) gist_public="false"; shift ;;
         *) custom_files+=("$1"); shift ;;
     esac
 done
@@ -32,12 +35,12 @@ PROJECT_ROOT="${custom_root:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 PROJECT_NAME="${custom_name:-$(basename "$PROJECT_ROOT")}"
 GIST_DESC="${PROJECT_NAME} config-sync"
 
-# Default tracked files when none specified
 if (( ${#custom_files[@]} == 0 )); then
-    LOCAL_PATHS=(".claude/CLAUDE.md" ".vscode/settings.json" ".vscode/launch.json")
-else
-    LOCAL_PATHS=("${custom_files[@]}")
+    echo "No files specified."
+    exit 1
 fi
+
+LOCAL_PATHS=("${custom_files[@]}")
 
 # Convert a local path to a gist-safe filename using + as directory separator.
 # .claude/CLAUDE.md     -> zlib-ng+.claude+CLAUDE.md
@@ -97,7 +100,7 @@ done
 
 if (( ${#local_files[@]} == 0 )); then
     echo "No tracked config files found in $PROJECT_ROOT"
-    exit 1
+    exit 0
 fi
 
 # --- Find existing gist ---
@@ -134,7 +137,7 @@ fi
 case "$direction" in
     create)
         echo "Creating gist: $GIST_DESC"
-        api_args=(-X POST -f "description=$GIST_DESC" -f "public=true")
+        api_args=(-X POST -f "description=$GIST_DESC" -f "public=$gist_public")
         api_args+=(-f "files[$README_NAME][content]=$(generate_readme)")
         for f in "${local_files[@]}"; do
             gist_name=$(gist_name_for "$f")
