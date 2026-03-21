@@ -1,6 +1,6 @@
 ---
 name: gist-config-sync
-description: Sync project config files (.claude/CLAUDE.md, .vscode/settings.json, .vscode/launch.json) to/from a GitHub gist
+description: Sync project config files to/from a GitHub gist
 ---
 
 Before syncing, scan each file for passwords, API keys, tokens, or
@@ -33,7 +33,8 @@ bash "${CLAUDE_SKILL_DIR}/scripts/config-sync.sh" \
   .claude/CLAUDE.md \
   .vscode/cmake-variants.yaml \
   .vscode/settings.json \
-  .vscode/launch.json
+  .vscode/launch.json \
+  .vscode/tasks.json
 ```
 
 Otherwise omit `--private`:
@@ -43,5 +44,6 @@ bash "${CLAUDE_SKILL_DIR}/scripts/config-sync.sh" \
   .claude/CLAUDE.md \
   .vscode/cmake-variants.yaml \
   .vscode/settings.json \
-  .vscode/launch.json
+  .vscode/launch.json \
+  .vscode/tasks.json
 ```
