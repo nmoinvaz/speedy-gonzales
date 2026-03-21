@@ -1,22 +1,45 @@
 #!/usr/bin/env bash
 # config-sync: Sync project config files to/from a single GitHub gist.
 #
-# Tracked files: .claude/CLAUDE.md, .vscode/settings.json, .vscode/launch.json
-# Gist naming:   "<project> config-sync"
-# Gist filenames: <project>+<path> with + as dir separator (e.g. zlib-ng+.claude+CLAUDE.md)
+# Usage: config-sync.sh [--name NAME] [--root DIR] [FILE...]
+#
+# Options:
+#   --name NAME   Gist name prefix (default: basename of root dir)
+#   --root DIR    Root directory for relative paths (default: git root or cwd)
+#   FILE...       Files to sync, relative to root (default: project config set)
+#
+# Gist naming:   "<name> config-sync"
+# Gist filenames: <name>+<path> with + as dir separator
 # Sync rule:     whichever side was modified more recently wins.
 
 set -euo pipefail
 
-PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
-PROJECT_NAME=$(basename "$PROJECT_ROOT")
+# --- Parse arguments ---
+
+custom_name=""
+custom_root=""
+custom_files=()
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --name) custom_name="$2"; shift 2 ;;
+        --root) custom_root="$2"; shift 2 ;;
+        *) custom_files+=("$1"); shift ;;
+    esac
+done
+
+PROJECT_ROOT="${custom_root:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
+PROJECT_NAME="${custom_name:-$(basename "$PROJECT_ROOT")}"
 GIST_DESC="${PROJECT_NAME} config-sync"
 
-# Tracked file paths (relative to project root)
-LOCAL_PATHS=(".claude/CLAUDE.md" ".vscode/settings.json" ".vscode/launch.json")
+# Default tracked files when none specified
+if (( ${#custom_files[@]} == 0 )); then
+    LOCAL_PATHS=(".claude/CLAUDE.md" ".vscode/settings.json" ".vscode/launch.json")
+else
+    LOCAL_PATHS=("${custom_files[@]}")
+fi
 
 # Convert a local path to a gist-safe filename using + as directory separator.
-# Preserves leading dots and original filenames.
 # .claude/CLAUDE.md     -> zlib-ng+.claude+CLAUDE.md
 # .vscode/settings.json -> zlib-ng+.vscode+settings.json
 gist_name_for() {
@@ -24,6 +47,20 @@ gist_name_for() {
     p="${p#./}"
     p=$(echo "$p" | sed 's|/|+|g')
     echo "${PROJECT_NAME}+${p}"
+}
+
+README_NAME="!${PROJECT_NAME}-config-sync.md"
+
+# Generate the readme content listing tracked files and their gist names.
+generate_readme() {
+    local body="# ${PROJECT_NAME} config-sync"$'\n\n'
+    body+="Configuration files synced by [config-sync](https://github.com/nmoinvaz/speedy-gonzales)."$'\n\n'
+    body+="| Local path | Gist filename |"$'\n'
+    body+="| --- | --- |"$'\n'
+    for f in "${LOCAL_PATHS[@]}"; do
+        body+="| \`$f\` | \`$(gist_name_for "$f")\` |"$'\n'
+    done
+    echo "$body"
 }
 
 # --- Helpers ---
@@ -97,9 +134,8 @@ fi
 case "$direction" in
     create)
         echo "Creating gist: $GIST_DESC"
-        # gh gist create uses the local filename, so we must use the API
-        # to control gist filenames with the project prefix.
         api_args=(-X POST -f "description=$GIST_DESC" -f "public=true")
+        api_args+=(-f "files[$README_NAME][content]=$(generate_readme)")
         for f in "${local_files[@]}"; do
             gist_name=$(gist_name_for "$f")
             content=$(cat "$PROJECT_ROOT/$f")
@@ -118,13 +154,13 @@ case "$direction" in
             if echo "$existing_files" | grep -qF "$gist_name"; then
                 gh gist edit "$gist_id" -f "$gist_name" "$PROJECT_ROOT/$f"
             else
-                # Add new file via API since gh gist edit -a uses the local filename
                 content=$(cat "$PROJECT_ROOT/$f")
                 gh api "gists/$gist_id" -X PATCH -f "files[$gist_name][content]=$content" --silent
             fi
             echo "  pushed $f -> $gist_name"
             pushed=$((pushed + 1))
         done
+        gh api "gists/$gist_id" -X PATCH -f "files[$README_NAME][content]=$(generate_readme)" --silent
         echo "Pushed $pushed file(s)"
         ;;
 
