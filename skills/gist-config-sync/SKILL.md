@@ -13,6 +13,7 @@ bash "${CLAUDE_SKILL_DIR}/scripts/config-sync.sh" \
   --name claude-personal \
   --root ~ \
   .claude/CLAUDE.md \
+  .claude/settings.json \
   .claude/statusline.sh
 ```
 
