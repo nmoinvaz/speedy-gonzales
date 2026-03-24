@@ -98,11 +98,6 @@ for f in "${LOCAL_PATHS[@]}"; do
     fi
 done
 
-if (( ${#local_files[@]} == 0 )); then
-    echo "No tracked config files found in $PROJECT_ROOT"
-    exit 0
-fi
-
 # --- Find existing gist ---
 
 gist_id=""
@@ -111,10 +106,17 @@ if [[ -n "$gist_line" ]]; then
     gist_id=$(echo "$gist_line" | awk '{print $1}' | head -1)
 fi
 
+if (( ${#local_files[@]} == 0 )) && [[ -z "$gist_id" ]]; then
+    echo "No tracked config files found in $PROJECT_ROOT and no remote gist exists."
+    exit 0
+fi
+
 # --- Determine direction ---
 
 if [[ -z "$gist_id" ]]; then
     direction="create"
+elif (( ${#local_files[@]} == 0 )); then
+    direction="pull"
 else
     updated_at=$(gh api "gists/$gist_id" --jq '.updated_at' 2>/dev/null || echo "")
     if [[ -n "$updated_at" ]]; then
