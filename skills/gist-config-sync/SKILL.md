@@ -3,7 +3,7 @@ name: gist-config-sync
 description: Sync project config files to/from a GitHub gist
 ---
 
-Before syncing, scan each file for passwords, API keys, tokens, or
+Before pushing, scan each file for passwords, API keys, tokens, or
 other secrets. If any are found, show them and ask before proceeding.
 
 If the user asks to sync their personal claude directory, run:
