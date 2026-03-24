@@ -17,33 +17,33 @@ Parse the argument to determine if this is a **single PR** or **all my PRs in a 
   gh pr list --repo <owner/repo> --author @me --json number,title,headRefOid
   ```
 
-## Step 2: For each PR, get the head SHA
+## Step 2: For each PR, get the current check status
+
+Use `gh pr checks` to get the authoritative, current state of all checks
+for the PR. This correctly reflects rerun results, unlike `gh run list`
+which can show stale job data from before a rerun completed.
 
 ```bash
-gh pr view <pr> --json headRefOid -q .headRefOid
+gh pr checks <pr> --repo <owner/repo>
 ```
 
-## Step 3: List all workflow runs for that commit SHA
+## Step 3: Identify failures
 
-```bash
-gh run list --repo <owner/repo> --commit <sha> --json databaseId,name,conclusion,status
-```
-
-## Step 4: Identify failures
-
-Identify workflows with conclusion "failure" or "cancelled". If all workflows are still "queued" or "in_progress" with no failures, check GitHub Actions status before reporting:
+Parse the `gh pr checks` output for checks with status "fail" or
+"cancelled". If all checks are still "pending" with no failures, check
+GitHub Actions status before reporting:
 ```bash
 curl -s https://www.githubstatus.com/api/v2/components.json | jq '.components[] | select(.name == "Actions") | {name, status}'
 ```
-If Actions is degraded or has a major outage, inform the user that GitHub Actions is experiencing issues and their runs may be stuck. Otherwise, report that all workflows are passing or pending.
+If Actions is degraded or has a major outage, inform the user that GitHub Actions is experiencing issues and their runs may be stuck. Otherwise, report that all checks are passing or pending.
 
-## Step 5: Get failed jobs for each failed workflow run
+## Step 4: Extract run IDs from failed checks
 
-```bash
-gh run view <run-id> --repo <owner/repo> --json jobs --jq '.jobs[] | {name, conclusion}'
-```
+Each failed check URL contains the run ID (e.g.,
+`https://github.com/owner/repo/actions/runs/12345/job/67890`). Extract
+the unique run IDs from the URLs of all failed and cancelled checks.
 
-## Step 6: Display a tree and rerun failed jobs
+## Step 5: Display a tree and rerun failed jobs
 
 Always group by PR:
 
@@ -69,4 +69,4 @@ Immediately rerun without asking for confirmation (rerunning is non-destructive)
 gh run rerun <run-id> --repo <owner/repo> --failed
 ```
 
-## Step 7: Report what was rerun
+## Step 6: Report what was rerun
