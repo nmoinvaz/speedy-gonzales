@@ -7,10 +7,13 @@
 #   --name NAME   Gist name prefix (default: basename of root dir)
 #   --root DIR    Root directory for relative paths (default: git root or cwd)
 #   --private     Create the gist as secret instead of public
-#   FILE...       Files to sync, relative to root
+#   FILE...       Files to sync, relative to root (if omitted, read from manifest)
 #
 # Gist naming:   "<name> config-sync"
 # Gist filenames: <name>+<path> with + as dir separator
+# Manifest:      YAML file in gist listing tracked files and their gist names.
+#                When no files are given as arguments, the manifest is read from
+#                the gist to determine which files to sync.
 # Sync rule:     whichever side was modified more recently wins.
 
 set -euo pipefail
@@ -35,12 +38,31 @@ PROJECT_ROOT="${custom_root:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 PROJECT_NAME="${custom_name:-$(basename "$PROJECT_ROOT")}"
 GIST_DESC="${PROJECT_NAME} config-sync"
 
-if (( ${#custom_files[@]} == 0 )); then
-    echo "No files specified."
-    exit 1
+LOCAL_PATHS=("${custom_files[@]}")
+
+# --- Find existing gist ---
+
+gist_id=""
+gist_line=$(gh gist list --limit 100 2>/dev/null | grep -F "$GIST_DESC" || true)
+if [[ -n "$gist_line" ]]; then
+    gist_id=$(echo "$gist_line" | awk '{print $1}' | head -1)
 fi
 
-LOCAL_PATHS=("${custom_files[@]}")
+# If no files given as args, read the manifest from the gist.
+if (( ${#LOCAL_PATHS[@]} == 0 )) && [[ -n "$gist_id" ]]; then
+    manifest_yaml=$(gh api "gists/$gist_id" --jq ".files[\"!${PROJECT_NAME}-config-sync.yaml\"].content // empty" 2>/dev/null || echo "")
+    if [[ -n "$manifest_yaml" ]]; then
+        while IFS= read -r path; do
+            [[ -n "$path" ]] && LOCAL_PATHS+=("$path")
+        done <<< "$(echo "$manifest_yaml" | yq -r '.files[].path')"
+        echo "Read ${#LOCAL_PATHS[@]} file(s) from manifest"
+    fi
+fi
+
+if (( ${#LOCAL_PATHS[@]} == 0 )); then
+    echo "No files specified and no manifest found."
+    exit 1
+fi
 
 # Convert a local path to a gist-safe filename using + as directory separator.
 # .claude/CLAUDE.md     -> zlib-ng+.claude+CLAUDE.md
@@ -52,16 +74,27 @@ gist_name_for() {
     echo "${PROJECT_NAME}+${p}"
 }
 
-README_NAME="!${PROJECT_NAME}-config-sync.md"
+MANIFEST_NAME="!${PROJECT_NAME}-config-sync.yaml"
 
-# Generate the readme content listing tracked files and their gist names.
-generate_readme() {
-    local body="# ${PROJECT_NAME} config-sync"$'\n\n'
-    body+="Configuration files synced by [config-sync](https://github.com/nmoinvaz/speedy-gonzales)."$'\n\n'
-    body+="| Local path | Gist filename |"$'\n'
-    body+="| --- | --- |"$'\n'
+# Get the repository URL if inside a git repo.
+repo_url() {
+    gh repo view --json url -q '.url' 2>/dev/null || echo ""
+}
+
+# Generate the manifest listing tracked files and their gist names.
+generate_manifest() {
+    local url
+    url=$(repo_url)
+    local body="name: ${PROJECT_NAME}"$'\n'
+    body+="description: Configuration files synced by config-sync"$'\n'
+    if [[ -n "$url" ]]; then
+        body+="repo: ${url}"$'\n'
+    fi
+    body+="url: https://github.com/nmoinvaz/speedy-gonzales"$'\n'
+    body+="files:"$'\n'
     for f in "${LOCAL_PATHS[@]}"; do
-        body+="| \`$f\` | \`$(gist_name_for "$f")\` |"$'\n'
+        body+="  - path: $f"$'\n'
+        body+="    gist: $(gist_name_for "$f")"$'\n'
     done
     echo "$body"
 }
@@ -98,14 +131,6 @@ for f in "${LOCAL_PATHS[@]}"; do
     fi
 done
 
-# --- Find existing gist ---
-
-gist_id=""
-gist_line=$(gh gist list --limit 100 2>/dev/null | grep -F "$GIST_DESC" || true)
-if [[ -n "$gist_line" ]]; then
-    gist_id=$(echo "$gist_line" | awk '{print $1}' | head -1)
-fi
-
 if (( ${#local_files[@]} == 0 )) && [[ -z "$gist_id" ]]; then
     echo "No tracked config files found in $PROJECT_ROOT and no remote gist exists."
     exit 0
@@ -140,7 +165,7 @@ case "$direction" in
     create)
         echo "Creating gist: $GIST_DESC"
         api_args=(-X POST -f "description=$GIST_DESC" -f "public=$gist_public")
-        api_args+=(-f "files[$README_NAME][content]=$(generate_readme)")
+        api_args+=(-f "files[$MANIFEST_NAME][content]=$(generate_manifest)")
         for f in "${local_files[@]}"; do
             gist_name=$(gist_name_for "$f")
             content=$(cat "$PROJECT_ROOT/$f")
@@ -165,7 +190,26 @@ case "$direction" in
             echo "  pushed $f -> $gist_name"
             pushed=$((pushed + 1))
         done
-        gh api "gists/$gist_id" -X PATCH -f "files[$README_NAME][content]=$(generate_readme)" --silent
+        gh api "gists/$gist_id" -X PATCH -f "files[$MANIFEST_NAME][content]=$(generate_manifest)" --silent
+        # Remove gist files that are no longer tracked.
+        expected_files=("$MANIFEST_NAME")
+        for f in "${local_files[@]}"; do
+            expected_files+=("$(gist_name_for "$f")")
+        done
+        while IFS= read -r remote_file; do
+            is_expected=false
+            for e in "${expected_files[@]}"; do
+                if [[ "$remote_file" == "$e" ]]; then
+                    is_expected=true
+                    break
+                fi
+            done
+            if [[ "$is_expected" == "false" ]]; then
+                jq -n --arg name "$remote_file" '{"files": {($name): null}}' \
+                    | gh api "gists/$gist_id" -X PATCH --input - --silent
+                echo "  removed stale file: $remote_file"
+            fi
+        done <<< "$(gh gist view "$gist_id" --files)"
         echo "Pushed $pushed file(s)"
         ;;
 
