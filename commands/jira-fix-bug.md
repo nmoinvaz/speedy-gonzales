@@ -14,8 +14,7 @@ $ARGUMENTS should be a Jira URL (e.g., https://company.atlassian.net/browse/PROJ
 
 ## Instructions
 
-Use `acli` for all Jira operations. Refer to the `acli` skill for command syntax reference.
-Before any Jira operations, verify that `acli` is authenticated by running `acli jira auth status`. If not authenticated, tell the user to run `acli jira auth login --web` and stop.
+Use `acli` for all Jira operations. Before any Jira operations, load the `/arriba:acli` skill for command syntax reference and verify that `acli` is authenticated by running `acli jira auth status`. If not authenticated, tell the user to run `acli jira auth login --web` and stop.
 
 1. **Extract issue key from argument**:
    - If $ARGUMENTS is a URL, extract the issue key from the `/browse/` part
