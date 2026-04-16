@@ -25,7 +25,6 @@ Claude Code marketplace plugin that speeds up everyday dev workflows.
 | `/dependabot-triage` | Triage Dependabot security alerts |
 | `/jira-fix-bug` | Fix a bug from a Jira issue |
 | `/learn` | Generate skills from web documentation |
-| `/codequality` | Run a full code quality review using 6 parallel agents |
 
 ## Skills
 
