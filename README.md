@@ -24,6 +24,7 @@ Claude Code marketplace plugin that speeds up everyday dev workflows.
 | `/dependabot-rebase` | Trigger Dependabot to rebase PRs |
 | `/dependabot-triage` | Triage Dependabot security alerts |
 | `/jira-fix-bug` | Fix a bug from a Jira issue |
+| `/jira-download-attachments` | Download all attachments and inline media from a Jira ticket |
 
 ## Skills
 
