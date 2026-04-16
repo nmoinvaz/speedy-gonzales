@@ -26,7 +26,10 @@ Use `acli` for all Jira operations. Before any Jira operations, load the `/arrib
 
 3. **Fetch issue comments** for additional context.
 
-4. **Display bug summary to user**:
+4. **Download attachments**:
+   Run the `/arriba:jira-download-attachments` skill with the issue key to download all attachments and inline media. Review downloaded files (screenshots, logs, etc.) for additional context about the bug.
+
+5. **Display bug summary to user**:
    Present a clear summary of the bug:
    ```
    🐛 Jira Issue: {key}
@@ -42,7 +45,7 @@ Use `acli` for all Jira operations. Before any Jira operations, load the `/arrib
    {list recent comments if any}
    ```
 
-5. **Search for similar issues**:
+6. **Search for similar issues**:
    Extract key terms from the summary and description, then search for related issues using JQL:
    - Search by text: `text ~ "{key-terms}" AND key != {issue-key}`
    - Search by component: `component = {component} AND key != {issue-key}`
@@ -61,7 +64,7 @@ Use `acli` for all Jira operations. Before any Jira operations, load the `/arrib
 
    If similar issues are found, briefly note any patterns or common themes.
 
-6. **Check git history for related changes**:
+7. **Check git history for related changes**:
    - Search commit history for the issue key and similar issue keys:
      ```bash
      git log --all --grep="{issue-key}" --oneline
@@ -100,7 +103,7 @@ Use `acli` for all Jira operations. Before any Jira operations, load the `/arrib
    - {file3} (current bug file - was it missed?)
    ```
 
-7. **Analyze the bug**:
+8. **Analyze the bug**:
    - Read the description and comments carefully
    - Review any similar issues found for additional context
    - Review git history findings for fix patterns
@@ -115,7 +118,7 @@ Use `acli` for all Jira operations. Before any Jira operations, load the `/arrib
    - If the description mentions specific files, search for them in the codebase
    - Consider: Was this file missed in a previous related fix?
 
-8. **Search the codebase**:
+9. **Search the codebase**:
    - Use the Grep tool to search for relevant code mentioned in the bug
    - Use the Glob tool to find files related to the issue
    - Use the Task tool with subagent_type=Explore if you need to broadly explore the codebase
@@ -124,7 +127,7 @@ Use `acli` for all Jira operations. Before any Jira operations, load the `/arrib
      - Search for files with similar patterns to those fixed previously
      - Check if they have the bug or have already been fixed
 
-9. **Propose a fix**:
+10. **Propose a fix**:
    - Explain what you found and what you think the issue is
    - Reference any similar issues that informed your understanding
    - Reference git history and fix patterns that informed your approach
@@ -137,20 +140,20 @@ Use `acli` for all Jira operations. Before any Jira operations, load the `/arrib
        - "No, just explain the issue"
        - "Search for more information first"
 
-10. **If user approves, implement the fix**:
+11. **If user approves, implement the fix**:
     - Make the necessary code changes using the Edit tool
     - If multiple files need the same fix pattern, apply it to all affected files
     - Run relevant tests if applicable
     - Create a summary of changes made
 
-11. **Create commit**:
+12. **Create commit**:
     - Use the `commit-msg` skill to generate commit message options and create the commit
 
-12. **Update Jira issue** (ask for permission first):
+13. **Update Jira issue** (ask for permission first):
     - Ask user: "Would you like me to add a comment to the Jira issue?"
     - If yes, add a comment with a brief description of the fix, files changed, and link to commit
 
-13. **Ask about status transition**:
+14. **Ask about status transition**:
     - Ask user: "Would you like to transition this issue?"
     - Show available transitions and let user choose (e.g., "In Progress", "In Review", "Done")
     - Transition the issue to the chosen status
