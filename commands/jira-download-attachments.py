@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
 """Download all attachments and inline media from a Jira ticket.
 
-Fetches the issue JSON with renderedFields, finds every attachment ID and
-filename (merging fields.attachment[] with inline references in rendered HTML),
-downloads each attachment via its 303 redirect to the signed media URL, and
-extracts any .zip archives into sibling subdirectories.
+Fetches the issue JSON with renderedFields and changelog, finds every
+attachment ID and filename, downloads each attachment via its 303 redirect to
+the signed media URL, and extracts any .zip archives into sibling subdirectories.
 
 Sources merged for attachment discovery (in priority order):
   1. fields.attachment[] — explicit attachments on the issue (authoritative
-     filenames, includes files not referenced inline).
-  2. Rendered HTML in renderedFields.description and each comment body —
-     inline images and file links. Recovers filenames when
-     fields.attachment[] is missing or truncated.
+     filenames). May be null when the Attachment system field is hidden by
+     the project's field configuration, even though attachments exist.
+  2. changelog histories — every attachment add/remove event. Authoritative
+     even when fields.attachment[] is null. Each surviving entry is confirmed
+     to still exist via a metadata fetch so deleted files are skipped.
+  3. Rendered HTML in renderedFields.description and each comment body —
+     inline images and file links. Recovers filenames when (1) and (2) miss
+     something.
 """
 
 import argparse
@@ -34,7 +37,7 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
 def fetch_issue(cloud_id: str, issue_key: str, token: str, out_path: Path) -> dict:
     url = (
         f"{JIRA_API_BASE}/{cloud_id}/rest/api/3/issue/{issue_key}"
-        "?expand=renderedFields&fields=attachment,description,comment"
+        "?expand=renderedFields,changelog&fields=attachment,description,comment"
     )
     req = urllib.request.Request(
         url,
@@ -49,7 +52,25 @@ def fetch_issue(cloud_id: str, issue_key: str, token: str, out_path: Path) -> di
     return json.loads(data)
 
 
-def extract(data: dict) -> dict[str, str]:
+def attachment_exists(cloud_id: str, aid: str, token: str) -> bool:
+    url = f"{JIRA_API_BASE}/{cloud_id}/rest/api/3/attachment/{aid}"
+    req = urllib.request.Request(
+        url,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/json",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req) as resp:
+            return 200 <= resp.status < 300
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return False
+        raise
+
+
+def extract(data: dict, cloud_id: str, token: str) -> dict[str, str]:
     attachments: dict[str, str] = {}
 
     for a in data.get("fields", {}).get("attachment") or []:
@@ -57,6 +78,33 @@ def extract(data: dict) -> dict[str, str]:
         filename = a.get("filename")
         if aid and filename:
             attachments[aid] = filename
+
+    # The changelog is authoritative even when fields.attachment[] is null
+    # (which happens when the Attachment field is hidden by the project's
+    # field configuration). Each "Attachment" history item records an add
+    # (from=null, to=<id>) or a remove (to=null, from=<id>). Walking the
+    # history in order lets us track which adds were not later removed.
+    live_ids: dict[str, str] = {}
+    for history in (data.get("changelog") or {}).get("histories") or []:
+        for item in history.get("items") or []:
+            if item.get("field") != "Attachment":
+                continue
+            added_id = item.get("to")
+            added_name = item.get("toString")
+            removed_id = item.get("from")
+            if added_id and added_name:
+                live_ids[str(added_id)] = added_name
+            if removed_id:
+                live_ids.pop(str(removed_id), None)
+
+    # Cross-check against the metadata endpoint to skip attachments that were
+    # deleted without a corresponding changelog remove, or that the caller
+    # lacks permission to download.
+    for aid, name in live_ids.items():
+        if aid in attachments:
+            continue
+        if attachment_exists(cloud_id, aid, token):
+            attachments[aid] = name
 
     rendered = data.get("renderedFields") or {}
     parts: list[str] = []
@@ -143,7 +191,7 @@ def main() -> int:
 
     data = fetch_issue(args.cloud_id, args.issue_key, args.token, out / "_issue.json")
 
-    attachments = extract(data)
+    attachments = extract(data, args.cloud_id, args.token)
     if not attachments:
         print("No attachments or inline media found.")
         return 0
