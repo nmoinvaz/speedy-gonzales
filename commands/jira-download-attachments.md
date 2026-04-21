@@ -58,7 +58,7 @@ On Linux, the keyring backend may differ. If `security` is not available, check 
 The bundled script fetches the issue JSON, resolves each attachment's 303 redirect to its signed media URL, downloads every file, and extracts any `.zip` archives into sibling subdirectories. It prints per-file progress and a final summary.
 
 ```bash
-python3 ~/Source/speedy-gonzales/commands/jira-download-attachments.py \
+python3 "${CLAUDE_PLUGIN_ROOT}/commands/jira-download-attachments.py" \
   --issue-key <ISSUE-KEY> \
   --cloud-id "$CLOUD_ID" \
   --token "$ACCESS_TOKEN" \

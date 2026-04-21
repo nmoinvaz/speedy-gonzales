@@ -20,7 +20,7 @@ Each commit message has a title and body, separated by a blank line. Match the e
 - Each sentence should add depth or highlight a distinct aspect of the change
 - Wrap lines at 72 characters for readability in terminals and git tools
 
-**Voice**: Read and follow the voice guidelines in `skills/code-voice/SKILL.md`
+**Voice**: Read and follow the voice guidelines in `/arriba:code-voice`
 
 # Workflow
 
