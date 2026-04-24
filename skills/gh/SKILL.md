@@ -28,6 +28,16 @@ To get job IDs for a run:
 gh run view {run-id} --repo {owner}/{repo} --json jobs --jq '.jobs[] | {name, id, status, conclusion}'
 ```
 
+## Downloading workflow artifacts
+
+`gh api repos/.../artifacts/{id}/zip > foo.zip` can truncate large artifacts (≥1GB+) without erroring — the resulting file fails to unzip with "End-of-central-directory signature not found." Use `gh run download` instead, which streams the artifact correctly and unzips the outer wrapper for you:
+
+```bash
+gh run download {run-id} --repo {owner}/{repo} --name {artifact-name} --dir /tmp/out
+```
+
+The artifact's contents land directly in `--dir` (no outer `.zip` to unwrap). You still need to extract any inner `.tar.gz`/`.zip` payloads yourself.
+
 ## Stacked pull requests with `gh-stack`
 
 The `github/gh-stack` extension (`gh extension install github/gh-stack`) manages a local stack of branches and the corresponding stack of PRs. A few non-obvious details:
