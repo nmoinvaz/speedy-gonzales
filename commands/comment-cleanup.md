@@ -51,7 +51,19 @@ All rewrite suggestions must follow the voice and style guidance in `/arriba:cod
 3. **If no candidates are found**:
    - Tell the user "No added or modified code comments found in the selected scope." and exit
 
-4. **Show a one-line preview list first**:
+4. **Survey project-level comment conventions** (once, before processing any comment):
+   - Pick a representative sample of source files in the repo. Bias toward files that share a language with the candidates and toward files the candidates already live in.
+   - Read enough of those files to characterise:
+     - Typical comment density (sparse, moderate, heavy).
+     - Preferred form (single-line `//` / `#` vs block `/* */` vs docstrings).
+     - Where comments cluster (function headers, non-obvious branches, public API only, TODOs).
+     - Tone (terse fragments, full sentences, formal doc comments).
+     - Whether the project uses a documented doc-comment dialect (rustdoc, godoc, JSDoc, Doxygen, etc.).
+     - Anything the project deliberately does *not* comment (e.g. obvious code, getters).
+   - Look for an explicit style guide in the repo: `CONTRIBUTING.md`, `STYLE.md`, `docs/style*`, language-specific lint configs (`.clang-format`, `rustfmt.toml`, `.eslintrc*`, `pyproject.toml`).
+   - Keep this survey in working memory; reuse it for every candidate. Do not re-survey per comment.
+
+5. **Show a one-line preview list first**:
    ```
    Found {N} changed comments:
      1. path/to/file.rs:42  // current first line of the comment …
@@ -60,7 +72,7 @@ All rewrite suggestions must follow the voice and style guidance in `/arriba:cod
    ```
    Then proceed through them one at a time.
 
-5. **For each comment**, display:
+6. **For each comment**, display:
    ```
    Comment {i} of {N}
    ─────────────────────────────
@@ -75,13 +87,15 @@ All rewrite suggestions must follow the voice and style guidance in `/arriba:cod
    ─────────────────────────────
    ```
 
-6. **Generate rewriting variations**:
-   - Read the file around the comment with the Read tool to understand what code the comment is annotating
-   - Follow `/arriba:code-voice` and the user's global rules:
+7. **Generate rewriting variations**:
+   - Read the file around the comment with the Read tool to understand what code the comment is annotating.
+   - The first time a candidate from a given file is reached, also sample comments elsewhere in that same file to capture **local** convention: do nearby comments name invariants, link to specs, stay terse, sit above functions, sit beside lines? Cache this per file and reuse it for the rest of that file's candidates.
+   - Reconcile the project survey, the local file convention, `/arriba:code-voice`, and these baseline rules:
      - Comment the **why**, not the **what**
      - Single-line preferred, word-break at ~100 characters
      - Don't reference the current task, ticket, or caller (those rot)
      - If a comment only restates obvious code, prefer suggesting **Delete**
+   - When project or file convention conflicts with the baseline guidance, prefer the project's convention — the surrounding code is the live style guide. Call out the conflict to the user only if it materially changes the suggestion.
    - Produce up to four rewrite options that span the conciseness × technical-detail axis:
      1. **Terse** — shortest plausible form. Fragment, drop articles, just the load-bearing words.
      2. **Concise** — one short complete sentence stating the intent or the non-obvious why.
@@ -92,23 +106,23 @@ All rewrite suggestions must follow the voice and style guidance in `/arriba:cod
      - Preserve the original indentation
      - Stay within ~100 characters per line
 
-7. **Ask the user to choose**:
+8. **Ask the user to choose**:
    Use AskUserQuestion with the generated variations as options, plus:
    - **Keep current** — leave the comment unchanged
    - **Delete** — remove the comment entirely (recommend this in the question text when the comment only restates the code)
    - **Edit** — let me write my own
    - **Skip** — move on without deciding
 
-8. **Apply the choice**:
+9. **Apply the choice**:
    - Variation chosen → use Edit to replace the exact comment text
    - **Edit** → ask the user for the replacement text, then apply
    - **Delete** → remove the comment line(s); also remove a trailing blank line if removal would leave a doubled blank
    - **Keep current** / **Skip** → no file change
    - After any file change, re-read the file to confirm the edit landed cleanly before moving on
 
-9. **Move to the next comment** and repeat. If a later comment lives in a file already edited, recompute its line number from the current file before applying.
+10. **Move to the next comment** and repeat. If a later comment lives in a file already edited, recompute its line number from the current file before applying.
 
-10. **Final summary**:
+11. **Final summary**:
     ```
     Comment Cleanup Summary
     ══════════════════════════════════════
@@ -123,7 +137,7 @@ All rewrite suggestions must follow the voice and style guidance in `/arriba:cod
       - {path}
     ```
 
-11. **Offer to stage the changes**:
+12. **Offer to stage the changes**:
     - Show `git diff -- <files-modified>` so the user can eyeball the result
     - Use AskUserQuestion to ask whether to stage:
       - **Stage all** → `git add <files-modified>`
