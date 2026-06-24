@@ -3,25 +3,6 @@ name: commit-msg
 description: Analyze staged git changes and generate commit message options with title and body
 ---
 
-# Commit message guidelines
-
-Each commit message has a title and body, separated by a blank line. Match the existing commit formatting in the repository first; use these defaults where the repo has no clear convention.
-
-**Title**:
-- Aim for 50 characters, hard limit of 72 (keeps messages scannable in `git log --oneline` and avoids truncation)
-- Use the imperative mood — write as a command, not a description. The title should complete the sentence: "If applied, this commit will ___"
-- Lead with a strong action verb (e.g., Add, Fix, Refactor, Remove, Update, Replace, Extract, Simplify, Improve)
-- Capitalize the first word and omit trailing periods
-
-**Body**:
-- Explain *what* changed and *why*, not *how* — the diff shows the how
-- Only describe the final outcome; exclude investigative steps, failed attempts, or debugging detours from the conversation that led to the change
-- 1-3 sentences providing context, motivation, or consequences not evident from the title
-- Each sentence should add depth or highlight a distinct aspect of the change
-- Wrap lines at 72 characters for readability in terminals and git tools
-
-**Voice**: Read and follow the voice guidelines in `/arriba:code-voice`
-
 # Workflow
 
 1. Get the staged diff for analysis:
