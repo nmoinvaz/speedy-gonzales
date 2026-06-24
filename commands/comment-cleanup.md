@@ -5,9 +5,7 @@ argument-hint: "[git ref or range]"
 allowed-tools: Bash, Edit, Read
 ---
 
-Walk through every code comment that was added or modified in the current changes and offer rewriting variations with different levels of conciseness and technical detail.
-
-All rewrite suggestions must follow the voice and style guidance in `/arriba:code-voice`.
+Walk through every code comment that was added or modified in the current changes and offer rewriting variations with different levels of conciseness and technical detail
 
 ## Arguments
 
@@ -90,7 +88,7 @@ All rewrite suggestions must follow the voice and style guidance in `/arriba:cod
 7. **Generate rewriting variations**:
    - Read the file around the comment with the Read tool to understand what code the comment is annotating.
    - The first time a candidate from a given file is reached, also sample comments elsewhere in that same file to capture **local** convention: do nearby comments name invariants, link to specs, stay terse, sit above functions, sit beside lines? Cache this per file and reuse it for the rest of that file's candidates.
-   - Reconcile the project survey, the local file convention, `/arriba:code-voice`, and these baseline rules:
+   - Reconcile the project survey, the local file convention, and these baseline rules:
      - Comment the **why**, not the **what**
      - Single-line preferred, word-break at ~100 characters
      - Don't reference the current task, ticket, or caller (those rot)
@@ -145,7 +143,7 @@ All rewrite suggestions must follow the voice and style guidance in `/arriba:cod
 
 ## Notes
 
-- Every rewrite — Terse, Concise, Detailed, Multi-line, or user **Edit** — must follow `/arriba:code-voice`.
+- Every rewrite — Terse, Concise, Detailed, Multi-line, or user **Edit**.
 - Only modify comments. Never touch surrounding code.
 - Preserve indentation, comment markers, and trailing whitespace policy of the file.
 - Treat multi-line `/* … */` blocks and Python docstrings as a single comment unit.
