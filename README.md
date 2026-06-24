@@ -12,8 +12,9 @@ Claude Code marketplace plugin that speeds up everyday dev workflows.
 ## Commands
 
 | Command | Description |
-|-------|-------------|
+|---------|-------------|
 | `/commit` | Full commit workflow with branch creation and PR |
+| `/comment-cleanup` | Walk through changed comments and pick a writing variation |
 | `/fixup` | Apply staged changes to a previous commit |
 | `/gh-pr` | Create a PR with labels and reviewer |
 | `/gh-pr-fix` | Fix unresolved PR review comments |
@@ -30,10 +31,15 @@ Claude Code marketplace plugin that speeds up everyday dev workflows.
 
 | Skill | Description |
 |-------|-------------|
+| `/acli` | Common Atlassian CLI (`acli`) commands for Jira |
 | `/commit-msg` | Generate and create a commit with message options |
 | `/extract-asm` | Extract function assembly from an object or assembly file |
+| `/gh` | GitHub CLI (`gh`) tips and workarounds |
+| `/testrail` | Interact with the TestRail Test Management API |
 
 ## Requirements
 
 - [GitHub CLI](https://cli.github.com/) (`gh`) - most commands
 - [Atlassian MCP](https://www.atlassian.com/) - Jira integration (optional)
+- [Atlassian CLI](https://developer.atlassian.com/cloud/acli/) (`acli`) - `/acli` skill (optional)
+- [TestRail](https://www.testrail.com/) API access - `/testrail` skill (optional)
