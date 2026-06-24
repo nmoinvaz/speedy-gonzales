@@ -29,7 +29,7 @@ allowed-tools: Bash
        - "No, commit to current branch"
 
 5. **Create new branch** (if requested):
-   - Use the `branch-name` skill to create a branch with proper naming conventions
+   - Create a branch with proper naming conventions
 
 6. **Analyze changes and create commit**:
    - Use the `commit-msg` skill to generate commit message options and create the commit

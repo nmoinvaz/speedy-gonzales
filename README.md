@@ -30,7 +30,6 @@ Claude Code marketplace plugin that speeds up everyday dev workflows.
 
 | Skill | Description |
 |-------|-------------|
-| `/branch-name` | Create a branch with naming conventions |
 | `/commit-msg` | Generate and create a commit with message options |
 | `/extract-asm` | Extract function assembly from an object or assembly file |
 
