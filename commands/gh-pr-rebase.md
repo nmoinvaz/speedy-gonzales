@@ -91,7 +91,7 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
 
 6. After a successful rebase, comment on the PR:
    ```bash
-   gh pr comment {pr_number} --repo {owner}/{repo} --body "Rebased with Claude Code."
+   gh pr comment {pr_number} --repo {owner}/{repo} --body "Rebased."
    ```
 
 7. Report the result to the user:
