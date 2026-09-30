@@ -1,6 +1,7 @@
 ---
 name: acli
 description: Common Atlassian CLI (acli) commands for Jira operations
+allowed-tools: Bash(acli --version)
 ---
 
 # Atlassian CLI (acli) Quick Reference
@@ -11,6 +12,12 @@ Common `acli` commands for Jira operations used across this project's workflows.
 
 - `acli` must be installed and authenticated: `acli jira auth login --web`
 - Check auth status: `acli jira auth status`
+
+Installed version:
+
+!`acli --version || true`
+
+If the output above says the version is outdated, tell the user before running any other command.
 
 ## Key Flag for Subcommands
 
