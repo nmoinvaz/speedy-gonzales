@@ -117,7 +117,7 @@ acli jira workitem comment update --key PROJ-123 --id 10001 --body-adf comment.j
 acli jira workitem comment list --key PROJ-123 --json
 ```
 
-Or via the view command:
+Use `view` to see the raw ADF, since `comment list` flattens bodies to plain text and drops list items:
 
 ```bash
 acli jira workitem view PROJ-123 --fields "comment" --json
