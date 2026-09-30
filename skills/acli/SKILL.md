@@ -19,8 +19,14 @@ The `view` command accepts the issue key as a positional argument, but subcomman
 ```bash
 acli jira workitem view PROJ-123                          # positional OK
 acli jira workitem comment list --key PROJ-123            # --key required
-acli jira workitem comment create --key PROJ-123 --body …  # --key required
+acli jira workitem comment create --key PROJ-123 --body-file comment.json  # --key required
 ```
+
+## Always Use ADF
+
+Always write comment bodies and issue descriptions in Atlassian Document Format (ADF). Plain text loses all formatting, and markdown or wiki markup renders as literal characters.
+
+Write the ADF to a JSON file and pass the file path, since inline JSON breaks easily under shell quoting. See [ADF Formatting](#adf-formatting) for the node structure.
 
 ## View Issue Details
 
@@ -78,14 +84,31 @@ acli jira workitem search --jql 'project = PROJ' --fields "key,summary,status" -
 
 ## Add Comment to Issue
 
-```bash
-acli jira workitem comment create --key PROJ-123 --body "Comment text here"
+Write the comment as an ADF document in `comment.json`:
+
+```json
+{
+  "type": "doc",
+  "version": 1,
+  "content": [
+    {
+      "type": "paragraph",
+      "content": [{"type": "text", "text": "Comment text here"}]
+    }
+  ]
+}
 ```
 
-Multi-line comment from a file:
+Then post it:
 
 ```bash
-acli jira workitem comment create --key PROJ-123 --body-file comment.txt
+acli jira workitem comment create --key PROJ-123 --body-file comment.json
+```
+
+Update an existing comment with `--body-adf`, since `comment update --body-file` only takes plain text:
+
+```bash
+acli jira workitem comment update --key PROJ-123 --id 10001 --body-adf comment.json
 ```
 
 ## List Comments on Issue
@@ -118,15 +141,32 @@ acli jira workitem transition --key PROJ-123 --status "Resolved"
 
 ## Create Issue
 
-```bash
-acli jira workitem create --project PROJ --type Bug --summary "Bug title" --description "Description"
+Write the issue definition in `workitem.json` with an ADF `description`. The `assignee` and `labels` fields are optional.
+
+```json
+{
+  "projectKey": "PROJ",
+  "type": "Bug",
+  "summary": "Bug title",
+  "assignee": "user@example.com",
+  "labels": ["bug", "triage"],
+  "description": {
+    "type": "doc",
+    "version": 1,
+    "content": [
+      {
+        "type": "paragraph",
+        "content": [{"type": "text", "text": "Description"}]
+      }
+    ]
+  }
+}
 ```
 
-With assignee and labels:
+Then create it:
 
 ```bash
-acli jira workitem create --project PROJ --type Task --summary "Title" \
-  --assignee "user@example.com" --label "bug,triage"
+acli jira workitem create --from-json workitem.json
 ```
 
 ## Edit Issue
@@ -136,23 +176,15 @@ acli jira workitem edit --key PROJ-123 --summary "Updated summary"
 acli jira workitem edit --key PROJ-123 --assignee "@me"
 ```
 
-## ADF Formatting (Rich Text Descriptions)
+## ADF Formatting
 
-The `--description` and `--description-file` flags only accept plain text. To set a rich-text description with headings, code blocks, lists, etc., use `--from-json` with Atlassian Document Format (ADF).
+ADF is the JSON format Jira uses for rich text with headings, code blocks, lists, etc. The root is always a `doc` node with `"version": 1`.
 
 Generate a sample JSON template:
 
 ```bash
 acli jira workitem create --generate-json
 acli jira workitem edit --generate-json
-```
-
-### Creating with ADF
-
-Write a JSON file with the ADF `description` field, then use `--from-json`:
-
-```bash
-acli jira workitem create --from-json workitem.json
 ```
 
 ### Editing with ADF
@@ -220,8 +252,8 @@ acli jira workitem edit --from-json workitem.json --yes
 
 ### Known Limitations
 
-- `--description` and `--description-file` do NOT render wiki markup or markdown — they produce plain text only
-- Comment creation (`comment create`) does not support ADF; comment update does via `--body-adf`
+- Markdown and wiki markup are never rendered, they appear as literal text
+- `comment update` accepts ADF only through `--body-adf`, its `--body-file` flag is plain text
 
 ## List Projects
 
