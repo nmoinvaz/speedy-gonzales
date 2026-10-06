@@ -17,7 +17,7 @@ Claude Code marketplace plugin that speeds up everyday dev workflows.
 | `/comment-cleanup` | Walk through changed comments and pick a writing variation |
 | `/fixup` | Apply staged changes to a previous commit |
 | `/gh-pr` | Create a PR with labels and reviewer |
-| `/gh-pr-fix` | Fix unresolved PR review comments |
+| `/gh-pr-fix` | Verify and fix unresolved PR review comments |
 | `/gh-pr-rebase` | Rebase a PR onto its base branch |
 | `/gh-release` | Trigger a GitHub release workflow |
 | `/gh-retry` | Rerun failed CI workflows for a PR |
