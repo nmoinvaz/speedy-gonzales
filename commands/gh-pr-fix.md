@@ -163,9 +163,9 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
    g. If "Accept" selected:
       - Stage the changed file: `git add {file_path}`
       - Commit the fix with a concise message describing the change
-      - **Reply to the comment** explaining what was done:
+      - **Reply to the comment** in one terse sentence without asking the user:
         - If the fix addresses the concern directly: reply "Ok will fix"
-        - If the reviewer's assumption was incorrect: explain why (e.g., "The assumption that X happens is incorrect because Y. Added a comment to clarify this.")
+        - If the reviewer's assumption was incorrect: one sentence saying why
         - Post the reply:
           ```bash
           gh api repos/{owner}/{repo}/pulls/{pr_number}/comments \
@@ -193,8 +193,8 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
       - Show the new diff and repeat the accept/reject question
 
 9. **If "Skip with reply" selected**:
-   - If Not real, draft the reply from the verification evidence and let the user accept or edit it
-   - Otherwise ask user for the reason using AskUserQuestion with text input option
+   - Write one terse sentence from the verification evidence stating why the comment is not being addressed
+   - Post it without asking the user to review or edit it
    - Post a reply to the comment:
      ```bash
      gh api repos/{owner}/{repo}/pulls/{pr_number}/comments \
@@ -256,7 +256,8 @@ Not all fixes require changing code behavior. Valid fixes include:
 
 ## Reply Guidelines
 
-When replying to comments after fixing or skipping:
-- **Direct fix**: Reply "Ok will fix" when the fix addresses the concern as requested
-- **Not real**: Explain why and cite the evidence (e.g., "The assumption that this contacts the server on every call is incorrect - the implementation uses internal caching. Added a comment to clarify.")
-- Keep replies concise but informative
+Replies are one terse sentence, posted without asking the user how to word them:
+- **Direct fix**: "Ok will fix"
+- **Not real**: State why, citing the evidence (e.g., "This is cached internally, so it does not contact the server on every call.")
+- **Skipped**: State why it is not being addressed
+- No preamble, no thanks, no restating the comment
