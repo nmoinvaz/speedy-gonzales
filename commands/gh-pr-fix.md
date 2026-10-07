@@ -162,7 +162,7 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
 
    g. If "Accept" selected:
       - Stage the changed file: `git add {file_path}`
-      - Use the `commit-msg` skill to generate commit message options and create the commit
+      - Commit the fix with a concise message describing the change
       - **Reply to the comment** explaining what was done:
         - If the fix addresses the concern directly: reply "Ok will fix"
         - If the reviewer's assumption was incorrect: explain why (e.g., "The assumption that X happens is incorrect because Y. Added a comment to clarify this.")
