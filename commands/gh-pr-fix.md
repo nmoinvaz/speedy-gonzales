@@ -131,6 +131,8 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
       Reason: {one sentence}
       ```
 
+   f. When Real, show the proposed fix as a `diff` code block if it is about 25 lines or fewer
+
 7. **Ask user what to do**:
    Use AskUserQuestion with options, recommending the first when Real and the second when Not real:
    - **Fix it** - Attempt to fix this issue
