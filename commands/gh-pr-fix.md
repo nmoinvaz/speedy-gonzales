@@ -2,7 +2,7 @@
 name: gh-pr-fix
 description: Verify and fix unresolved PR review comments from Copilot or CodeRabbit
 argument-hint: "[PR URL or number]"
-allowed-tools: Bash, Edit, Grep, Read
+allowed-tools: Agent, Bash, Edit, Grep, Read
 ---
 
 Verify and fix unresolved PR review comments from Copilot or CodeRabbit.
@@ -73,11 +73,20 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
    - Inform the user: "No unresolved comments from Copilot or CodeRabbit found."
    - Exit
 
-5. **Process each unresolved comment one at a time**:
-   Verify silently first, then display one block per comment (step 6e). Surface what bears on the
-   decision, enough to judge the verdict without opening the PR.
+5. **Verify every comment in parallel**:
+   Launch one subagent per comment, all in a single message so they run at the same time, using
+   the Agent tool with `subagent_type: general-purpose`. Print one line while they run, e.g.
+   "Verifying 7 comments in parallel", and nothing else.
 
-6. **Verify the issue is real**:
+   Each subagent is read-only. It must not edit files, build, run tests, run git commands that
+   change state, or post to GitHub. Give it:
+   - The repo root and the PR head branch
+   - The comment: its number N of total, `path:line`, author, and the raw body
+   - The verification procedure in step 6, verbatim
+   - The block format in step 6e and the diff in step 6f, to return as text
+   Surface what bears on the decision, enough to judge the verdict without opening the PR.
+
+6. **Verify the issue is real** (each subagent runs this for its comment):
    a. Clearly restate the comment as one testable claim
 
    b. Read the code around the referenced line
@@ -86,7 +95,7 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
       - Trace callers and types with Grep
       - Look for an existing guard or check
       - Verify library behavior against its source
-      - Run a test when that is cheaper than reasoning
+      - Reason from the code rather than building or running tests, the subagents share one tree
 
    d. **Check git history for context** when the code looks deliberate:
       - Get the history of the specific file:
@@ -112,7 +121,7 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
 
       Fold anything relevant into the verdict's reason. Do not print a separate history block.
 
-   e. Display the comment and verdict as one block:
+   e. Return the comment and verdict as one block, exactly in this form:
       ```
       Comment {N} of {total}  {path}:{line}  {author}
       {comment body trimmed to its point, drop details blocks, suggestion blocks, and AI prompts}
@@ -125,11 +134,16 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
       Partially real means the problem is real but the reviewer's fix is wrong or overstated.
       Add one line of git history only when it changed the verdict.
 
-   f. When Real or Partially real, follow the block with the proposed fix as a `diff` code block.
+   f. When Real or Partially real, follow the block with the proposed fix as a `diff` code block,
+      returned as text and not applied.
       This is the user's only look at the change before it is committed, so make it complete: the
       same fix anywhere else the pattern appears, plus any include or declaration it needs.
 
-7. **Ask user what to do**:
+7. **Present each result as it arrives**:
+   Print the subagent's block and diff verbatim, then ask what to do (step 8). Do not wait for the
+   others, they keep running while the user answers.
+
+8. **Ask user what to do**:
    This is the only prompt for the comment. Use AskUserQuestion with options, recommending the
    first when Real or Partially real and the third when Not real:
    - **Fix it** - Apply the diff shown above and commit it
@@ -137,7 +151,7 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
    - **Skip with reply** - Skip and reply with a reason
    - **Skip** - Move to the next comment without action
 
-8. **If "Fix it" or "Fix it differently" selected**:
+9. **If "Fix it" or "Fix it differently" selected**:
    a. For "Fix it differently", ask what to change and fold it into the fix
 
    b. Implement the fix using the Edit tool, applying the diff shown in step 6f plus whatever the
@@ -171,24 +185,24 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
         ' -f threadId={thread_id}
         ```
 
-9. **If "Skip with reply" selected**:
-   - Write one terse sentence from the verification evidence stating why the comment is not being addressed
-   - Post it without asking the user to review or edit it
-   - Post a reply to the comment:
-     ```bash
-     jq -Rs '{body: rtrimstr("\n")}' <<'EOF' | gh api repos/{owner}/{repo}/pulls/{pr_number}/comments/{comment_id}/replies --input -
-     {reason}
-     EOF
-     ```
-   - Resolve the thread with the mutation from step 8d if the issue is not real or not applicable
-   - Review-body findings have no thread, so skip both and move on
+10. **If "Skip with reply" selected**:
+    - Write one terse sentence from the verification evidence stating why the comment is not being addressed
+    - Post it without asking the user to review or edit it
+    - Post a reply to the comment:
+      ```bash
+      jq -Rs '{body: rtrimstr("\n")}' <<'EOF' | gh api repos/{owner}/{repo}/pulls/{pr_number}/comments/{comment_id}/replies --input -
+      {reason}
+      EOF
+      ```
+    - Resolve the thread with the mutation from step 9d if the issue is not real or not applicable
+    - Review-body findings have no thread, so skip both and move on
 
-10. **If "Skip" selected**:
+11. **If "Skip" selected**:
     - Move to the next comment without any action
 
-11. **Repeat** for all remaining unresolved comments
+12. **Repeat** for each result as it arrives, until every subagent has returned
 
-12. **Final summary**:
+13. **Final summary**:
     After processing all comments, show a summary:
     ```
     PR Review Comments Summary
@@ -203,7 +217,7 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
     - {hash}: {title}
     ```
 
-13. **Ask about pushing**:
+14. **Ask about pushing**:
     If any commits were created:
     - **Analyze commits for squash candidates**:
       - Group commits that touch the same file
@@ -218,7 +232,7 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
 
 ## Notes
 
-- The command processes comments one at a time to allow careful review
+- Comments are verified in parallel by read-only subagents, then reviewed one at a time as results arrive
 - One prompt per comment, the fix is committed without a second confirmation
 - Comments are verified before any action so false positives get a reply, not a patch
 - Each fix creates its own atomic commit for easy tracking and potential reverting
