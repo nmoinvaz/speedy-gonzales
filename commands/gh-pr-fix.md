@@ -26,6 +26,13 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
    ```bash
    gh api repos/{owner}/{repo}/pulls/{pr_number}/comments --paginate
    ```
+   CodeRabbit also lists findings in its review bodies with no thread, under collapsed nitpick and
+   outside-diff sections. Fetch those too and treat each `path:line` entry as a comment with no
+   thread, so it gets verified and fixed but never replied to or resolved:
+   ```bash
+   gh api repos/{owner}/{repo}/pulls/{pr_number}/reviews --paginate \
+     --jq '.[] | select(.user.login == "coderabbitai[bot]") | .body'
+   ```
 
 3. **Filter for unresolved Copilot/CodeRabbit comments**:
    - Filter comments where `user.login` is `copilot-pull-request-reviewer` or `coderabbitai[bot]`
@@ -152,7 +159,8 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
    g. If "Accept" selected:
       - Stage the changed file: `git add {file_path}`
       - Commit the fix with a concise message describing the change
-      - **Reply to the comment** in one terse sentence without asking the user:
+      - **Reply to the comment** in one terse sentence without asking the user. Review-body
+        findings have no thread, so skip the reply and the resolve for those:
         - If the fix addresses the concern directly: reply "Fixed."
         - If Partially real: one sentence saying what was fixed instead and why
         - If the reviewer's assumption was incorrect: one sentence saying why
@@ -192,6 +200,7 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
      EOF
      ```
    - Resolve the thread with the mutation from step 8g if the issue is not real or not applicable
+   - Review-body findings have no thread, so skip both and move on
 
 10. **If "Skip" selected**:
     - Move to the next comment without any action
