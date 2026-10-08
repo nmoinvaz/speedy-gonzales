@@ -153,14 +153,14 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
       - Stage the changed file: `git add {file_path}`
       - Commit the fix with a concise message describing the change
       - **Reply to the comment** in one terse sentence without asking the user:
-        - If the fix addresses the concern directly: reply "Ok will fix"
+        - If the fix addresses the concern directly: reply "Fixed."
         - If Partially real: one sentence saying what was fixed instead and why
         - If the reviewer's assumption was incorrect: one sentence saying why
-        - Post the reply:
+        - Post the reply, piping the body through jq so quotes and backticks survive:
           ```bash
-          gh api repos/{owner}/{repo}/pulls/{pr_number}/comments \
-            -f body="{reply}" \
-            -F in_reply_to={comment_id}
+          jq -Rs '{body: rtrimstr("\n")}' <<'EOF' | gh api repos/{owner}/{repo}/pulls/{pr_number}/comments/{comment_id}/replies --input -
+          {reply}
+          EOF
           ```
       - Resolve the review thread using the `id` from the thread query:
         ```bash
@@ -187,11 +187,11 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
    - Post it without asking the user to review or edit it
    - Post a reply to the comment:
      ```bash
-     gh api repos/{owner}/{repo}/pulls/{pr_number}/comments \
-       -f body="{reason}" \
-       -F in_reply_to={comment_id}
+     jq -Rs '{body: rtrimstr("\n")}' <<'EOF' | gh api repos/{owner}/{repo}/pulls/{pr_number}/comments/{comment_id}/replies --input -
+     {reason}
+     EOF
      ```
-   - Resolve the thread if the issue is not real or not applicable
+   - Resolve the thread with the mutation from step 8g if the issue is not real or not applicable
 
 10. **If "Skip" selected**:
     - Move to the next comment without any action
@@ -248,7 +248,7 @@ Not all fixes require changing code behavior. Valid fixes include:
 ## Reply Guidelines
 
 Replies are one terse sentence, posted without asking the user how to word them:
-- **Direct fix**: "Ok will fix"
+- **Direct fix**: "Fixed."
 - **Partially real**: State what was fixed instead and why
 - **Not real**: State why, citing the evidence (e.g., "This is cached internally, so it does not contact the server on every call.")
 - **Skipped**: State why it is not being addressed
