@@ -64,8 +64,8 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
    - Exit
 
 5. **Process each unresolved comment one at a time**:
-   Verify silently first, then display one compact block per comment (step 6e). Surface only what
-   bears on the decision. Do not print the raw comment body, the restated claim stands in for it.
+   Verify silently first, then display one block per comment (step 6e). Surface what bears on the
+   decision, enough to judge the verdict without opening the PR.
 
 6. **Verify the issue is real**:
    a. Clearly restate the comment as one testable claim
@@ -104,10 +104,15 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
 
    e. Display the comment and verdict as one block:
       ```
-      Comment {N} of {total}  {path}:{line}
+      Comment {N} of {total}  {path}:{line}  {author}
+      {comment body trimmed to its point, drop details blocks, suggestion blocks, and AI prompts}
+
       Claim: {one sentence}
-      🔍 {Real | Not real | Unclear}: {one sentence reason citing file:line or command output}
+      🔍 {Real | Not real | Unclear}: {one or two sentences giving the reason}
+      For: {code lines or command output that support the claim, a few lines at most}
+      Against: {what cuts the other way, omit the line when nothing does}
       ```
+      Add one line of git history only when it changed the verdict.
 
    f. When Real, follow the block with the proposed fix as a `diff` code block if it is about 25
       lines or fewer
@@ -223,7 +228,7 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
 - Bot accounts to look for: `copilot-pull-request-reviewer`, `coderabbitai[bot]`
 - If a file has multiple comments, they are still processed one at a time
 - Show one compact block per comment, the claim and the verdict, before asking for action
-- Surface only what is relevant to the decision, omit history, evidence, or diffs that do not change it
+- Surface what is relevant to the decision, enough to judge the verdict, and omit history or diffs that do not change it
 - Git history analysis helps understand why code was written a certain way and reveals fix patterns
 - If a fix pattern is identified, check if other files might need the same change
 
