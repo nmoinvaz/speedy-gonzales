@@ -125,39 +125,29 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
       Partially real means the problem is real but the reviewer's fix is wrong or overstated.
       Add one line of git history only when it changed the verdict.
 
-   f. When Real or Partially real, follow the block with the proposed fix as a `diff` code block if
-      it is about 25 lines or fewer
+   f. When Real or Partially real, follow the block with the proposed fix as a `diff` code block.
+      This is the user's only look at the change before it is committed, so make it complete: the
+      same fix anywhere else the pattern appears, plus any include or declaration it needs.
 
 7. **Ask user what to do**:
-   Use AskUserQuestion with options, recommending the first when Real or Partially real and the
-   second when Not real:
-   - **Fix it** - Attempt to fix this issue
+   This is the only prompt for the comment. Use AskUserQuestion with options, recommending the
+   first when Real or Partially real and the third when Not real:
+   - **Fix it** - Apply the diff shown above and commit it
+   - **Fix it differently** - Say what to change, then it is applied and committed
    - **Skip with reply** - Skip and reply with a reason
    - **Skip** - Move to the next comment without action
 
-8. **If "Fix it" selected**:
-   a. Reuse the context gathered during verification
+8. **If "Fix it" or "Fix it differently" selected**:
+   a. For "Fix it differently", ask what to change and fold it into the fix
 
-   b. Analyze the comment to understand what change is being requested
+   b. Implement the fix using the Edit tool, applying the diff shown in step 6f plus whatever the
+      user asked for
 
-   c. **Search for similar patterns** in the codebase if the fix might apply elsewhere:
-      - Use Grep to find similar code patterns
-      - Note if other files might need the same fix
+   c. If the applied change differs from the diff shown, show only the difference as a `diff`
+      code block, for information. Do not ask again, the user already chose to fix it.
 
-   d. Implement the fix using the Edit tool
-
-   e. Show the diff of your changes only if it differs from the one shown in step 6f:
-      ```bash
-      git diff {file_path}
-      ```
-
-   f. Ask user to accept or reject using AskUserQuestion:
-      - **Accept** - Stage and commit this fix
-      - **Reject** - Discard changes and move to next comment
-      - **Edit** - Let me modify the fix before accepting
-
-   g. If "Accept" selected:
-      - Stage the changed file: `git add {file_path}`
+   d. Stage, commit, reply, and resolve without asking:
+      - Stage the changed files: `git add {file_paths}`
       - Commit the fix with a concise message describing the change
       - **Reply to the comment** in one terse sentence without asking the user. Review-body
         findings have no thread, so skip the reply and the resolve for those:
@@ -181,15 +171,6 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
         ' -f threadId={thread_id}
         ```
 
-   h. If "Reject" selected:
-      - Discard changes: `git checkout -- {file_path}`
-      - Move to next comment
-
-   i. If "Edit" selected:
-      - Ask user what they want to change
-      - Apply their requested modifications
-      - Show the new diff and repeat the accept/reject question
-
 9. **If "Skip with reply" selected**:
    - Write one terse sentence from the verification evidence stating why the comment is not being addressed
    - Post it without asking the user to review or edit it
@@ -199,7 +180,7 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
      {reason}
      EOF
      ```
-   - Resolve the thread with the mutation from step 8g if the issue is not real or not applicable
+   - Resolve the thread with the mutation from step 8d if the issue is not real or not applicable
    - Review-body findings have no thread, so skip both and move on
 
 10. **If "Skip" selected**:
@@ -238,6 +219,7 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
 ## Notes
 
 - The command processes comments one at a time to allow careful review
+- One prompt per comment, the fix is committed without a second confirmation
 - Comments are verified before any action so false positives get a reply, not a patch
 - Each fix creates its own atomic commit for easy tracking and potential reverting
 - Bot accounts to look for: `copilot-pull-request-reviewer`, `coderabbitai[bot]`
