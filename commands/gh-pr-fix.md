@@ -108,17 +108,19 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
       {comment body trimmed to its point, drop details blocks, suggestion blocks, and AI prompts}
 
       Claim: {one sentence}
-      🔍 {Real | Not real | Unclear}: {one or two sentences giving the reason}
+      🔍 {Real | Partially real | Not real | Unclear}: {one or two sentences giving the reason}
       For: {code lines or command output that support the claim, a few lines at most}
       Against: {what cuts the other way, omit the line when nothing does}
       ```
+      Partially real means the problem is real but the reviewer's fix is wrong or overstated.
       Add one line of git history only when it changed the verdict.
 
-   f. When Real, follow the block with the proposed fix as a `diff` code block if it is about 25
-      lines or fewer
+   f. When Real or Partially real, follow the block with the proposed fix as a `diff` code block if
+      it is about 25 lines or fewer
 
 7. **Ask user what to do**:
-   Use AskUserQuestion with options, recommending the first when Real and the second when Not real:
+   Use AskUserQuestion with options, recommending the first when Real or Partially real and the
+   second when Not real:
    - **Fix it** - Attempt to fix this issue
    - **Skip with reply** - Skip and reply with a reason
    - **Skip** - Move to the next comment without action
@@ -149,6 +151,7 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
       - Commit the fix with a concise message describing the change
       - **Reply to the comment** in one terse sentence without asking the user:
         - If the fix addresses the concern directly: reply "Ok will fix"
+        - If Partially real: one sentence saying what was fixed instead and why
         - If the reviewer's assumption was incorrect: one sentence saying why
         - Post the reply:
           ```bash
@@ -243,6 +246,7 @@ Not all fixes require changing code behavior. Valid fixes include:
 
 Replies are one terse sentence, posted without asking the user how to word them:
 - **Direct fix**: "Ok will fix"
+- **Partially real**: State what was fixed instead and why
 - **Not real**: State why, citing the evidence (e.g., "This is cached internally, so it does not contact the server on every call.")
 - **Skipped**: State why it is not being addressed
 - No preamble, no thanks, no restating the comment
