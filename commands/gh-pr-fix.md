@@ -31,18 +31,20 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
    - Filter comments where `user.login` is `copilot-pull-request-reviewer` or `coderabbitai[bot]`
    - Exclude comments that are part of resolved review threads
    - Check if comment is in a resolved thread using the `in_reply_to_id` field and thread resolution status
-   - To check resolution status, you may need to fetch review threads:
+   - Fetch the review threads, which carry the thread `id` needed to resolve them later:
      ```bash
-     gh api graphql -f query='
-       query($owner: String!, $repo: String!, $pr: Int!) {
+     gh api graphql --paginate --slurp -f query='
+       query($owner: String!, $repo: String!, $pr: Int!, $endCursor: String) {
          repository(owner: $owner, name: $repo) {
            pullRequest(number: $pr) {
-             reviewThreads(first: 100) {
+             reviewThreads(first: 100, after: $endCursor) {
+               pageInfo { hasNextPage endCursor }
                nodes {
+                 id
                  isResolved
+                 isOutdated
                  comments(first: 10) {
                    nodes {
-                     id
                      databaseId
                      body
                      author { login }
@@ -57,7 +59,8 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
        }
      ' -f owner={owner} -f repo={repo} -F pr={pr_number}
      ```
-   - Only include threads where `isResolved` is `false`
+   - Only include threads where `isResolved` and `isOutdated` are both `false`
+   - Match each REST comment to its thread by `databaseId`, and keep the thread `id` for resolving
 
 4. **If no unresolved comments found**:
    - Inform the user: "No unresolved comments from Copilot or CodeRabbit found."
@@ -159,7 +162,7 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
             -f body="{reply}" \
             -F in_reply_to={comment_id}
           ```
-      - Resolve the review thread:
+      - Resolve the review thread using the `id` from the thread query:
         ```bash
         gh api graphql -f query='
           mutation($threadId: ID!) {
@@ -167,7 +170,7 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
               thread { isResolved }
             }
           }
-        ' -f threadId={thread_node_id}
+        ' -f threadId={thread_id}
         ```
 
    h. If "Reject" selected:
