@@ -64,19 +64,11 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
    - Exit
 
 5. **Process each unresolved comment one at a time**:
-   For each comment, display:
-   ```
-   Comment {N} of {total}
-   ─────────────────────────────
-   File: {path}:{line}
-   From: {author}
-
-   {comment body}
-   ─────────────────────────────
-   ```
+   Verify silently first, then display one compact block per comment (step 6e). Surface only what
+   bears on the decision. Do not print the raw comment body, the restated claim stands in for it.
 
 6. **Verify the issue is real**:
-   a. Restate the comment as one testable claim
+   a. Clearly restate the comment as one testable claim
 
    b. Read the code around the referenced line
 
@@ -108,30 +100,17 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
         - Were there previous attempts to fix similar issues?
         - Is this part of a pattern that exists elsewhere in the codebase?
 
-      Display git history findings if relevant:
+      Fold anything relevant into the verdict's reason. Do not print a separate history block.
+
+   e. Display the comment and verdict as one block:
       ```
-      📜 Git History Context:
-
-      Recent changes to {file}:
-      - {hash}: {message}
-      - {hash}: {message}
-
-      Related commits:
-      - {hash}: {message}
-
-      Context: {brief explanation of why code is structured this way}
-      ```
-
-   e. Display the verdict:
-      ```
-      🔍 Verification: {Real | Not real | Unclear}
-
+      Comment {N} of {total}  {path}:{line}
       Claim: {one sentence}
-      Evidence: {file:line or command output}
-      Reason: {one sentence}
+      🔍 {Real | Not real | Unclear}: {one sentence reason citing file:line or command output}
       ```
 
-   f. When Real, show the proposed fix as a `diff` code block if it is about 25 lines or fewer
+   f. When Real, follow the block with the proposed fix as a `diff` code block if it is about 25
+      lines or fewer
 
 7. **Ask user what to do**:
    Use AskUserQuestion with options, recommending the first when Real and the second when Not real:
@@ -150,7 +129,7 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
 
    d. Implement the fix using the Edit tool
 
-   e. Show the diff of your changes:
+   e. Show the diff of your changes only if it differs from the one shown in step 6f:
       ```bash
       git diff {file_path}
       ```
@@ -243,7 +222,8 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
 - Each fix creates its own atomic commit for easy tracking and potential reverting
 - Bot accounts to look for: `copilot-pull-request-reviewer`, `coderabbitai[bot]`
 - If a file has multiple comments, they are still processed one at a time
-- Always show the full context of the comment and the verification verdict before asking for action
+- Show one compact block per comment, the claim and the verdict, before asking for action
+- Surface only what is relevant to the decision, omit history, evidence, or diffs that do not change it
 - Git history analysis helps understand why code was written a certain way and reveals fix patterns
 - If a fix pattern is identified, check if other files might need the same change
 
