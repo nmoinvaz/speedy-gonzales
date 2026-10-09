@@ -32,7 +32,6 @@ Claude Code marketplace plugin that speeds up everyday dev workflows.
 | Skill | Description |
 |-------|-------------|
 | `/acli` | Common Atlassian CLI (`acli`) commands for Jira |
-| `/commit-msg` | Generate and create a commit with message options |
 | `/extract-asm` | Extract function assembly from an object or assembly file |
 | `/gh` | GitHub CLI (`gh`) tips and workarounds |
 | `/testrail` | Interact with the TestRail Test Management API |

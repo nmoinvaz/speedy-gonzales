@@ -147,7 +147,7 @@ Use `acli` for all Jira operations. Before any Jira operations, load the `/arrib
     - Create a summary of changes made
 
 12. **Create commit**:
-    - Use the `commit-msg` skill to generate commit message options and create the commit
+    - Generate commit message options and create the commit
 
 13. **Update Jira issue** (ask for permission first):
     - Ask user: "Would you like me to add a comment to the Jira issue?"
