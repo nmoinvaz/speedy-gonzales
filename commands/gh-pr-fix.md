@@ -1,11 +1,11 @@
 ---
 name: gh-pr-fix
-description: Verify and fix unresolved PR review comments from Copilot or CodeRabbit
+description: Verify and fix unresolved PR review comments from humans, Copilot, or CodeRabbit
 argument-hint: "[PR URL or number]"
 allowed-tools: Agent, Bash, Edit, Grep, Read
 ---
 
-Verify and fix unresolved PR review comments from Copilot or CodeRabbit.
+Verify and fix unresolved PR review comments from any reviewer, human or bot.
 
 ## Arguments
 
@@ -22,20 +22,22 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
      ```
    - If no PR exists, inform the user and exit
 
-2. **Fetch all review comments**:
+2. **Fetch all review comments**, from every reviewer:
    ```bash
    gh api repos/{owner}/{repo}/pulls/{pr_number}/comments --paginate
    ```
-   CodeRabbit also lists findings in its review bodies with no thread, under collapsed nitpick and
-   outside-diff sections. Fetch those too and treat each `path:line` entry as a comment with no
-   thread, so it gets verified and fixed but never replied to or resolved:
+   Human and Copilot findings always arrive as threaded comments, so the call above has them.
+   CodeRabbit alone also lists findings in its review bodies with no thread, under collapsed
+   nitpick and outside-diff sections. Fetch those too and treat each `path:line` entry as a comment
+   with no thread, so it gets verified and fixed but never replied to or resolved:
    ```bash
    gh api repos/{owner}/{repo}/pulls/{pr_number}/reviews --paginate \
      --jq '.[] | select(.user.login == "coderabbitai[bot]") | .body'
    ```
 
-3. **Filter for unresolved Copilot/CodeRabbit comments**:
-   - Filter comments where `user.login` is `copilot-pull-request-reviewer` or `coderabbitai[bot]`
+3. **Filter for unresolved reviewer comments**:
+   - Keep threads whose first comment is from someone other than the PR author, human or bot.
+     Get the author with `gh pr view {pr_number} --repo {owner}/{repo} --json author --jq .author.login`
    - Exclude comments that are part of resolved review threads
    - Check if comment is in a resolved thread using the `in_reply_to_id` field and thread resolution status
    - Fetch the review threads, which carry the thread `id` needed to resolve them later:
@@ -70,7 +72,7 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
    - Match each REST comment to its thread by `databaseId`, and keep the thread `id` for resolving
 
 4. **If no unresolved comments found**:
-   - Inform the user: "No unresolved comments from Copilot or CodeRabbit found."
+   - Inform the user: "No unresolved review comments found."
    - Exit
 
 5. **Verify every comment in parallel**:
@@ -174,7 +176,8 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
           {reply}
           EOF
           ```
-      - Resolve the review thread using the `id` from the thread query:
+      - Resolve the review thread using the `id` from the thread query. Only resolve bot threads,
+        a human reviewer resolves their own once they have seen the fix:
         ```bash
         gh api graphql -f query='
           mutation($threadId: ID!) {
@@ -194,7 +197,8 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
       {reason}
       EOF
       ```
-    - Resolve the thread with the mutation from step 9d if the issue is not real or not applicable
+    - Resolve the thread with the mutation from step 9d if the issue is not real or not applicable.
+      As in step 9d, only bot threads are resolved, a human reviewer closes their own
     - Review-body findings have no thread, so skip both and move on
 
 11. **If "Skip" selected**:
@@ -236,7 +240,7 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
 - One prompt per comment, the fix is committed without a second confirmation
 - Comments are verified before any action so false positives get a reply, not a patch
 - Each fix creates its own atomic commit for easy tracking and potential reverting
-- Bot accounts to look for: `copilot-pull-request-reviewer`, `coderabbitai[bot]`
+- Bot accounts: `copilot-pull-request-reviewer`, `coderabbitai[bot]`. Any other reviewer login is a human
 - If a file has multiple comments, they are still processed one at a time
 - Show one compact block per comment, the claim and the verdict, before asking for action
 - Surface what is relevant to the decision, enough to judge the verdict, and omit history or diffs that do not change it
