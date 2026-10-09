@@ -32,7 +32,7 @@ allowed-tools: Bash
    - Create a branch with proper naming conventions
 
 6. **Analyze changes and create commit**:
-   - Use the `commit-msg` skill to generate commit message options and create the commit
+   - Generate commit message options and create the commit
 
 7. **Run CodeRabbit review** (if available):
    - Check if `cr` is installed: `which cr`
