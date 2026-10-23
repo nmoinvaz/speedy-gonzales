@@ -5,27 +5,30 @@ description: Non-obvious tips and workarounds for the GitHub CLI (gh) that preve
 
 # GitHub CLI reference for non-obvious behaviors
 
-## Requesting PR reviewers
+## Review threads
 
-`gh pr edit --add-reviewer` can fail with cryptic empty-string errors. Use the API directly instead:
+`gh` has no command to list, reply to, or resolve PR review threads. Use the `gh-arriba` extension:
 
 ```bash
-gh api repos/{owner}/{repo}/pulls/{pr-number}/requested_reviewers \
-  -f "reviewers[]=username"
+gh arriba pr threads {pr-number} --json          # unresolved, current threads with their IDs
+gh arriba pr reply {comment-id} "Fixed." --resolve
+gh arriba pr resolve {thread-id}...              # PRRT_ IDs or comment IDs, --undo to reopen
+```
+
+## Requesting PR reviewers
+
+`gh pr edit --add-reviewer` can fail with cryptic empty-string errors. Use `gh arriba`, which calls the REST endpoint:
+
+```bash
+gh arriba pr reviewers {pr-number} --add username
 ```
 
 ## Downloading workflow job logs
 
-`gh run view --log` can be unreliable for large logs. Download job logs directly via the API and save to a file for searching:
+`gh run view --log` can be unreliable for large logs. Download job logs to files for searching. It takes a run ID, a job ID, or an Actions URL, and prints the path of each log:
 
 ```bash
-gh api repos/{owner}/{repo}/actions/jobs/{job-id}/logs > /tmp/job.log
-```
-
-To get job IDs for a run:
-
-```bash
-gh run view {run-id} --repo {owner}/{repo} --json jobs --jq '.jobs[] | {name, id, status, conclusion}'
+gh arriba run logs {run-id} --repo {owner}/{repo} --failed -o /tmp/logs
 ```
 
 ## Downloading workflow artifacts
