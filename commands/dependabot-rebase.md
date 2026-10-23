@@ -14,14 +14,16 @@ $ARGUMENTS should be a GitHub repository in the format `owner/repo`, or empty to
 ## Instructions
 
 1. **Determine the repository**:
-   - If $ARGUMENTS is provided, use it as the repository
-   - If $ARGUMENTS is empty, get current repo: `gh repo view --json owner,name` and format as `owner/name`
+   - If $ARGUMENTS is provided, pass `-R $ARGUMENTS` to every `gh arriba` call below
+   - If $ARGUMENTS is empty, `gh arriba` uses the current repository
 
 2. **Fetch all open Dependabot PRs**:
    ```bash
-   gh pr list --repo {owner/repo} --author app/dependabot --json number,title,headRefName,url --state open
+   gh arriba dependabot list [-R {owner/repo}] --json
    ```
-   - If no Dependabot PRs found, inform user and exit
+   - The PRs are spread across `ready`, `needs_rebase`, `blocked`, and the `members` of each entry
+     in `groups`. Each has `number`, `title`, `head_ref`, and `url`
+   - If `counts.total` is 0, inform user and exit
 
 3. **Display PRs to user**:
    - Show a formatted list with PR number, title, and branch name
@@ -32,11 +34,15 @@ $ARGUMENTS should be a GitHub repository in the format `owner/repo`, or empty to
      - Add a first option: "All PRs (Recommended)" that will rebase all PRs
 
 4. **Rebase selected PRs**:
-   - For each selected PR, post a comment to trigger Dependabot rebase:
+   - For all PRs:
      ```bash
-     gh pr comment {pr_number} --repo {owner/repo} --body "@dependabot rebase"
+     gh arriba dependabot rebase [-R {owner/repo}] --all --yes
      ```
-   - Show confirmation message for each PR: "Triggered rebase for PR #{number}"
+   - For the selected PRs:
+     ```bash
+     gh arriba dependabot rebase {pr_number}... [-R {owner/repo}]
+     ```
+   - It comments `@dependabot rebase` on each and prints a confirmation per PR
 
 5. **Summary**:
    - Report total number of PRs that were sent rebase commands
