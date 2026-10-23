@@ -54,18 +54,15 @@ Create or manage a GitHub Pull Request for the current branch:
    - Report the applied labels with a short reason for each
 
 4. **Request a review**:
-   - Get top contributors to the repository (excluding current user):
+   - Get the top contributors to the repository, which already excludes you, the PR author, and
+     bots. Each entry has `login`, `contributions`, and a `status` of `requested` or `reviewed`
+     when that applies:
      ```bash
-     gh api repos/{owner}/{repo}/contributors --jq '.[].login' | head -10
+     gh arriba pr reviewers <pr-number> --json
      ```
-   - Get the current GitHub username:
-     ```bash
-     gh api user --jq '.login'
-     ```
-   - Filter out the current user from the contributors list
    - Present the top contributors using AskUserQuestion and ask who should review the PR
      - Include a "Skip - don't request review" option
    - If user selects a reviewer:
      ```bash
-     gh pr edit <pr-number> --add-reviewer "<username>"
+     gh arriba pr reviewers <pr-number> --add "<username>"
      ```
