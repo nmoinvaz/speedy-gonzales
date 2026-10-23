@@ -9,6 +9,13 @@ Claude Code marketplace plugin that speeds up everyday dev workflows.
 /plugin install arriba@speedy-gonzales
 ```
 
+The GitHub commands call the [gh-arriba](https://github.com/nmoinvaz/gh-arriba) extension. The plugin
+installs it at the start of a session when it is missing, or install it yourself:
+
+```bash
+gh extension install nmoinvaz/gh-arriba
+```
+
 ## Commands
 
 | Command | Description |
@@ -39,6 +46,7 @@ Claude Code marketplace plugin that speeds up everyday dev workflows.
 ## Requirements
 
 - [GitHub CLI](https://cli.github.com/) (`gh`) - most commands
+- [gh-arriba](https://github.com/nmoinvaz/gh-arriba) extension - GitHub and Dependabot commands, installed automatically
 - [Atlassian MCP](https://www.atlassian.com/) - Jira integration (optional)
 - [Atlassian CLI](https://developer.atlassian.com/cloud/acli/) (`acli`) - `/acli` skill (optional)
 - [TestRail](https://www.testrail.com/) API access - `/testrail` skill (optional)
