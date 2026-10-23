@@ -1,7 +1,7 @@
 ---
 name: gh-pr-rebase
 description: Rebase a GitHub PR onto its base branch
-argument-hint: "[PR URL]"
+argument-hint: "[PR URL or number]"
 allowed-tools: Bash
 ---
 
@@ -9,92 +9,31 @@ Rebase a GitHub PR onto its base branch.
 
 ## Arguments
 
-$ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/123)
+$ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/123) or PR number, or empty to use the current branch's PR.
 
 ## Instructions
 
-1. Parse the PR URL from $ARGUMENTS to extract:
-   - Owner
-   - Repository name
-   - PR number
-
-2. If $ARGUMENTS is empty or not a valid GitHub PR URL, ask the user to provide one.
-
-3. Ask the user which rebase method they prefer:
+1. Ask the user which rebase method they prefer:
    - **Local rebase (signed commits)** - Rebases locally using your GPG key, then pushes. Commits will show as "Verified" with your signature.
    - **Remote rebase (unsigned)** - Uses GitHub API to rebase server-side. Faster but commits won't be signed.
 
-4. **If remote rebase**: Use the GitHub CLI:
+2. **If remote rebase**:
    ```bash
-   gh api repos/{owner}/{repo}/pulls/{pr_number}/update-branch \
-     -X PUT \
-     -f update_method=rebase
+   gh arriba pr rebase $ARGUMENTS --remote
    ```
 
-5. **If local rebase**: Perform a safe local rebase:
-
-   a. Get PR details (head branch, base branch):
-      ```bash
-      gh pr view {pr_number} --repo {owner}/{repo} --json headRefName,baseRefName
-      ```
-
-   b. Check if the current branch matches the PR's head branch:
-      ```bash
-      git branch --show-current
-      ```
-
-   c. **If on the same branch as the PR** (current branch == head branch):
-
-      Fetch and rebase directly:
-      ```bash
-      git fetch origin
-      git rebase origin/{base_branch}
-      ```
-
-      If rebase succeeds, force push:
-      ```bash
-      git push --force-with-lease
-      ```
-
-   d. **If on a different branch**: Use a temporary worktree to avoid disrupting the current working state:
-
-      i. Create a temporary worktree (run from main repo, not /tmp):
-         ```bash
-         git worktree add /tmp/rebase-pr-{pr_number} -b temp-rebase-{pr_number}
-         ```
-
-      ii. Fetch latest refs and reset the temp branch to the PR head.
-          **Important**: Don't use `gh pr checkout` - it fails if the branch is checked out elsewhere.
-          Instead, fetch and reset:
-          ```bash
-          git -C /tmp/rebase-pr-{pr_number} fetch origin
-          git -C /tmp/rebase-pr-{pr_number} reset --hard origin/{head_branch}
-          ```
-
-      iii. Rebase onto the base branch:
-           ```bash
-           git -C /tmp/rebase-pr-{pr_number} rebase origin/{base_branch}
-           ```
-
-      iv. If rebase succeeds, force push to the PR branch:
-          **Important**: Push from temp branch to the actual PR branch name.
-          ```bash
-          git -C /tmp/rebase-pr-{pr_number} push origin temp-rebase-{pr_number}:{head_branch} --force-with-lease
-          ```
-
-      v. Clean up the temporary worktree.
-         **Important**: Run cleanup from the main repo directory, never from inside the worktree.
-         ```bash
-         git worktree remove /tmp/rebase-pr-{pr_number}
-         git branch -D temp-rebase-{pr_number}
-         ```
-
-6. After a successful rebase, comment on the PR:
+3. **If local rebase**, run it from a clone of the PR's base repository:
    ```bash
-   gh pr comment {pr_number} --repo {owner}/{repo} --body "Rebased."
+   gh arriba pr rebase $ARGUMENTS
    ```
+   - When the checked-out branch is the PR's head branch, it rebases in place
+   - Otherwise it rebases in a temporary worktree, so the current checkout is left alone
+   - It pushes with a lease on the PR head, so commits someone else pushed are never overwritten
 
-7. Report the result to the user:
+   Both methods comment "Rebased." on the PR after a successful rebase.
+
+4. Report the result to the user:
    - On success: Confirm the PR was rebased (and whether commits are signed)
-   - On failure: Explain the error (common issues: conflicts exist, rebase not allowed, PR already up to date)
-   - If conflicts occur during local rebase, clean up the worktree and inform the user they need to resolve conflicts manually
+   - Already up to date: Say so, nothing was pushed
+   - On conflicts: List the conflicting files it printed and tell the user they need to resolve them manually
+   - On failure: Explain the error (common issues: uncommitted changes, a local branch missing commits from the PR, or a PR from a fork, which needs the remote method)
