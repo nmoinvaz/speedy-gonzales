@@ -14,62 +14,27 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
 ## Instructions
 
 1. **Determine the PR**:
-   - If $ARGUMENTS is a URL, parse the owner, repo, and PR number
-   - If $ARGUMENTS is a number, use it with the current repo
-   - If $ARGUMENTS is empty, get the PR for the current branch:
-     ```bash
-     gh pr view --json number,url
-     ```
-   - If no PR exists, inform the user and exit
+   - Pass $ARGUMENTS to `gh arriba` as is. It accepts a URL, a number, or nothing for the current
+     branch's PR
+   - When the PR lives in a different repo than the working directory, add `-R {owner}/{repo}` to
+     every `gh arriba` call below
+   - If no PR exists, `gh arriba` fails. Inform the user and exit
 
 2. **Fetch all review comments**, from every reviewer:
    ```bash
-   gh api repos/{owner}/{repo}/pulls/{pr_number}/comments --paginate
+   gh arriba pr threads $ARGUMENTS --review-bodies --json
    ```
-   Human and Copilot findings always arrive as threaded comments, so the call above has them.
-   CodeRabbit alone also lists findings in its review bodies with no thread, under collapsed
-   nitpick and outside-diff sections. Fetch those too and treat each `path:line` entry as a comment
-   with no thread, so it gets verified and fixed but never replied to or resolved:
-   ```bash
-   gh api repos/{owner}/{repo}/pulls/{pr_number}/reviews --paginate \
-     --jq '.[] | select(.user.login == "coderabbitai[bot]") | .body'
-   ```
+   - `.pr` has the PR `number`, `url`, and `author`
+   - `.threads[]` holds only unresolved, current threads. Each has the thread `id` (`PRRT_...`)
+     used to resolve it, `path`, `line`, `start_line`, and `comments[]`, where each comment has
+     the `id` used to reply, `author`, `bot`, and `body`
+   - `.findings[]` holds the CodeRabbit findings that exist only in its review bodies, under the
+     collapsed nitpick and outside-diff sections. Each has `path`, `start_line`, `line`, `title`,
+     and `body`. Treat each as a comment with no thread, so it gets verified and fixed but never
+     replied to or resolved
 
-3. **Filter for unresolved reviewer comments**:
-   - Keep threads whose first comment is from someone other than the PR author, human or bot.
-     Get the author with `gh pr view {pr_number} --repo {owner}/{repo} --json author --jq .author.login`
-   - Exclude comments that are part of resolved review threads
-   - Check if comment is in a resolved thread using the `in_reply_to_id` field and thread resolution status
-   - Fetch the review threads, which carry the thread `id` needed to resolve them later:
-     ```bash
-     gh api graphql --paginate --slurp -f query='
-       query($owner: String!, $repo: String!, $pr: Int!, $endCursor: String) {
-         repository(owner: $owner, name: $repo) {
-           pullRequest(number: $pr) {
-             reviewThreads(first: 100, after: $endCursor) {
-               pageInfo { hasNextPage endCursor }
-               nodes {
-                 id
-                 isResolved
-                 isOutdated
-                 comments(first: 10) {
-                   nodes {
-                     databaseId
-                     body
-                     author { login }
-                     path
-                     line
-                   }
-                 }
-               }
-             }
-           }
-         }
-       }
-     ' -f owner={owner} -f repo={repo} -F pr={pr_number}
-     ```
-   - Only include threads where `isResolved` and `isOutdated` are both `false`
-   - Match each REST comment to its thread by `databaseId`, and keep the thread `id` for resolving
+3. **Filter for reviewer comments**:
+   - Keep threads whose first comment is from someone other than `.pr.author`, human or bot
 
 4. **If no unresolved comments found**:
    - Inform the user: "No unresolved review comments found."
@@ -143,7 +108,9 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
    a. For "Fix it differently", ask what to change and fold it into the fix
 
    b. Implement the fix using the Edit tool, applying the diff shown in step 6f plus whatever the
-      user asked for
+      user asked for. When the fix is exactly the reviewer's ```` ```suggestion ```` block, apply
+      it with `gh arriba pr apply $ARGUMENTS --thread {thread_id}` instead. It needs the PR head
+      checked out with no local changes to that file
 
    c. If the applied change differs from the diff shown, show only the difference as a `diff`
       code block, for information. Do not ask again, the user already chose to fix it.
@@ -156,35 +123,25 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
         - If the fix addresses the concern directly: reply "Fixed."
         - If Partially real: one sentence saying what was fixed instead and why
         - If the reviewer's assumption was incorrect: one sentence saying why
-        - Post the reply, piping the body through jq so quotes and backticks survive:
+        - Post the reply on stdin, so quotes and backticks survive. Add `--resolve` only when the
+          thread's first comment has `bot: true`, since a human reviewer resolves their own once
+          they have seen the fix:
           ```bash
-          jq -Rs '{body: rtrimstr("\n")}' <<'EOF' | gh api repos/{owner}/{repo}/pulls/{pr_number}/comments/{comment_id}/replies --input -
+          gh arriba pr reply {comment_id} - [--resolve] <<'EOF'
           {reply}
           EOF
           ```
-      - Resolve the review thread using the `id` from the thread query. Only resolve bot threads,
-        a human reviewer resolves their own once they have seen the fix:
-        ```bash
-        gh api graphql -f query='
-          mutation($threadId: ID!) {
-            resolveReviewThread(input: {threadId: $threadId}) {
-              thread { isResolved }
-            }
-          }
-        ' -f threadId={thread_id}
-        ```
 
 9. **If "Skip with reply" selected**:
    - Write one terse sentence from the verification evidence stating why the comment is not being addressed
    - Post it without asking the user to review or edit it
-   - Post a reply to the comment:
+   - Post a reply to the comment, adding `--resolve` when the issue is not real or not applicable.
+     As in step 8d, only bot threads are resolved, a human reviewer closes their own:
      ```bash
-     jq -Rs '{body: rtrimstr("\n")}' <<'EOF' | gh api repos/{owner}/{repo}/pulls/{pr_number}/comments/{comment_id}/replies --input -
+     gh arriba pr reply {comment_id} - [--resolve] <<'EOF'
      {reason}
      EOF
      ```
-   - Resolve the thread with the mutation from step 8d if the issue is not real or not applicable.
-     As in step 8d, only bot threads are resolved, a human reviewer closes their own
    - Review-body findings have no thread, so skip both and move on
 
 10. **If "Skip" selected**:
@@ -226,7 +183,7 @@ $ARGUMENTS should be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/1
 - One prompt per comment, the fix is committed without a second confirmation
 - Comments are verified before any action so false positives get a reply, not a patch
 - Each fix creates its own atomic commit for easy tracking and potential reverting
-- Bot accounts: `copilot-pull-request-reviewer`, `coderabbitai[bot]`. Any other reviewer login is a human
+- Bot reviewers such as `copilot-pull-request-reviewer` and `coderabbitai` have `bot: true` in the thread JSON. Everyone else is a human
 - If a file has multiple comments, they are still processed one at a time
 - Show one compact block per comment, the claim and the verdict, before asking for action
 - Surface what is relevant to the decision, enough to judge the verdict, and omit history or diffs that do not change it
