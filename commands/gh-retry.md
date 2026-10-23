@@ -7,66 +7,26 @@ allowed-tools: Bash
 
 Rerun all failed workflow runs: $ARGUMENTS
 
-## Step 1: Determine mode and collect PRs
+## Step 1: Rerun
 
-Parse the argument to determine if this is a **single PR** or **all my PRs in a repo**:
-
-- **Single PR**: A PR number (e.g., `123`), PR URL (e.g., `https://github.com/owner/repo/pull/123`), or PR reference (e.g., `owner/repo#123`)
-- **Repo-wide**: A repo URL (e.g., `https://github.com/owner/repo`), or `owner/repo` without a PR number — list all open PRs by the current user:
-  ```bash
-  gh pr list --repo <owner/repo> --author @me --json number,title,headRefOid
-  ```
-
-## Step 2: For each PR, get the current check status
-
-Use `gh pr checks` to get the authoritative, current state of all checks
-for the PR. This correctly reflects rerun results, unlike `gh run list`
-which can show stale job data from before a rerun completed.
+Pass the argument through. `gh arriba` treats a PR number, PR URL, or `owner/repo#123` as a
+**single PR**, and a repo URL or `owner/repo` as **all my open PRs in that repo**:
 
 ```bash
-gh pr checks <pr> --repo <owner/repo>
+gh arriba pr retry $ARGUMENTS
 ```
 
-## Step 3: Identify failures
+Rerunning is non-destructive, so it reruns immediately without asking. For each PR it:
+- Reads the current check status of the head commit, keeping only the latest attempt of each check
+  so earlier reruns are not counted as failures
+- Prints a tree of the failed and cancelled jobs grouped by PR and workflow run, with run IDs
+- Reruns only the failed jobs of each run
+- Lists failed external statuses that are not GitHub Actions as skipped, since they can't be rerun
+- When nothing failed but checks are still pending, checks githubstatus.com and warns if GitHub
+  Actions is degraded or has an outage
 
-Parse the `gh pr checks` output for checks with status "fail" or
-"cancelled". If all checks are still "pending" with no failures, check
-GitHub Actions status before reporting:
-```bash
-curl -s https://www.githubstatus.com/api/v2/components.json | jq '.components[] | select(.name == "Actions") | {name, status}'
-```
-If Actions is degraded or has a major outage, inform the user that GitHub Actions is experiencing issues and their runs may be stuck. Otherwise, report that all checks are passing or pending.
+## Step 2: Report what was rerun
 
-## Step 4: Extract run IDs from failed checks
-
-Each failed check URL contains the run ID (e.g.,
-`https://github.com/owner/repo/actions/runs/12345/job/67890`). Extract
-the unique run IDs from the URLs of all failed and cancelled checks.
-
-## Step 5: Display a tree and rerun failed jobs
-
-Always group by PR:
-
-```
-Workflows to rerun:
-PR #123 - Add feature X
-├── **Build** (`21610828075`)
-│   ├── Build - Ubuntu (failure)
-│   ├── Build - Windows (failure)
-│   └── Build - macOS (failure)
-└── **Coverage** (`21610828076`)
-    └── Coverage - Windows (failure)
-PR #456 - Fix bug Y
-└── **Orchestrator** (`21610828077`)
-    └── Coverage - Windows (failure)
-```
-- Workflow names should be **bold**
-- Run IDs should be in `backticks`
-- Only show jobs with conclusion "failure" or "cancelled" in the tree (these are the ones that will be rerun)
-
-Immediately rerun without asking for confirmation (rerunning is non-destructive):
-```bash
-gh run rerun <run-id> --repo <owner/repo> --failed
-```
-
-## Step 6: Report what was rerun
+Relay the tree it printed. Call out any run that could not be rerun and why, such as a run still in
+progress, and any GitHub Actions outage warning. If nothing failed, report that all checks are
+passing or pending.
