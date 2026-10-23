@@ -21,11 +21,15 @@ Refer to the `acli` skill for command syntax reference.
 
 ## Step 1: Fetch all open Dependabot alerts
 
-Run this command to list every open alert:
+Run this command to list every open alert, most severe first:
 
 ```bash
-gh api repos/<owner>/<repo>/dependabot/alerts --jq '.[] | select(.state == "open") | {number, dependency: .dependency.package.name, severity: .security_advisory.severity, summary: .security_advisory.summary, ghsa_id: .security_advisory.ghsa_id, cve_id: (.security_advisory.identifiers[] | select(.type == "CVE") | .value) // "N/A", published: .security_advisory.published_at}'
+gh arriba dependabot alerts -R <owner>/<repo> --json
 ```
+
+Each alert has `number`, `package`, `ecosystem`, `severity`, `cve` (null when the advisory has
+none), `ghsa`, `summary`, `manifest`, `patched` (the first fixed version), `url`, and `fix_pr`, the
+open Dependabot PR for the same package with its `number`, `title`, and `url`, or null.
 
 If there are no open alerts, tell me and stop.
 
@@ -35,11 +39,7 @@ If there are no open alerts, tell me and stop.
 
 ### 2a: Check for an associated Dependabot PR
 
-Search for an open Dependabot pull request that addresses this alert:
-
-```bash
-gh pr list --repo <owner>/<repo> --state open --author app/dependabot --json number,title,url --jq '.[] | select(.title | test("<package-name>"; "i"))'
-```
+Use the alert's `fix_pr` from Step 1. It is null when no open Dependabot PR updates that package.
 
 ### 2b: Present the alert summary
 
@@ -47,7 +47,7 @@ Present a brief summary including:
 - Alert number
 - Package name
 - Severity (critical / high / medium / low)
-- CVE ID
+- CVE ID, or the GHSA ID when there is no CVE
 - One-line description of the vulnerability
 - **Associated PR** (if found in 2a): PR number, title, and URL
 
@@ -65,16 +65,12 @@ Then ask me what I want to do using AskUserQuestion. The options must be:
 
 ## Step 3: If I choose to merge the PR
 
-First, approve the Dependabot PR (required by branch protection policies):
+Comment on the PR, approve it (required by branch protection policies), rebase merge it, and delete
+its branch:
 
 ```bash
-gh pr review <pr-number> --repo <owner>/<repo> --approve
-```
-
-Then merge using rebase:
-
-```bash
-gh pr merge <pr-number> --repo <owner>/<repo> --rebase
+gh arriba dependabot merge <pr-number> -R <owner>/<repo> --yes \
+  --comment "Approved and merged via Claude Code dependabot-triage."
 ```
 
 If the merge succeeds, the Dependabot alert should be automatically resolved by GitHub. Verify by checking the alert state:
@@ -83,18 +79,8 @@ If the merge succeeds, the Dependabot alert should be automatically resolved by 
 gh api repos/<owner>/<repo>/dependabot/alerts/<number> --jq '.state'
 ```
 
-Then post a comment on the PR noting it was merged during triage:
-
-```bash
-gh pr comment <pr-number> --repo <owner>/<repo> --body "Merged via Claude Code dependabot-triage."
-```
-
-If the alert is still open after merging, mark it as fixed:
-
-```bash
-gh api --method PATCH repos/<owner>/<repo>/dependabot/alerts/<number> \
-  -f state=fixed
-```
+If the alert is still open, GitHub marks it fixed once the dependency graph picks up the merge,
+usually within minutes. Report it as pending. The API can't set an alert to fixed by hand.
 
 Confirm success or report failure before moving on.
 
@@ -103,10 +89,8 @@ Confirm success or report failure before moving on.
 ## Step 4: If I choose to dismiss, run the dismiss command
 
 ```bash
-gh api --method PATCH repos/<owner>/<repo>/dependabot/alerts/<number> \
-  -f state=dismissed \
-  -f dismissed_reason=<reason> \
-  -f dismissed_comment="Dismissed via Claude Code triage"
+gh arriba dependabot dismiss <number> -R <owner>/<repo> --reason <reason> --yes \
+  --comment "Dismissed via Claude Code triage"
 ```
 
 Confirm success or report failure before moving on.
