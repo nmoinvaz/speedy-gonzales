@@ -27,7 +27,6 @@ gh extension install nmoinvaz/gh-arriba
 | `/gh-pr-fix` | Verify and fix unresolved PR review comments |
 | `/gh-pr-rebase` | Rebase a PR onto its base branch |
 | `/gh-release` | Trigger a GitHub release workflow |
-| `/gh-retry` | Rerun failed CI workflows for a PR |
 | `/dependabot-merge` | Interactively review and merge Dependabot PRs |
 | `/dependabot-rebase` | Trigger Dependabot to rebase PRs |
 | `/dependabot-triage` | Triage Dependabot security alerts |
