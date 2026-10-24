@@ -5,7 +5,7 @@ Claude Code marketplace plugin that speeds up everyday dev workflows.
 ## Installation
 
 ```bash
-/plugin marketplace add https://github.com/nmoinvaz/speedy-gonzales
+/plugin marketplace add nmoinvaz/speedy-gonzales
 /plugin install arriba@speedy-gonzales
 ```
 
