@@ -23,6 +23,33 @@ gh arriba pr resolve {thread-id}...              # PRRT_ IDs or comment IDs, --u
 gh arriba pr reviewers {pr-number} --add username
 ```
 
+## Rerunning failed checks
+
+`gh run rerun` takes one workflow run at a time. Use `gh arriba`, which reruns the failed jobs of
+every run on a PR, or on all your open PRs when given `owner/repo`:
+
+```bash
+gh arriba pr retry {pr-number}
+```
+
+## Rebasing a PR
+
+`gh pr update-branch --rebase` rebases server-side, so the commits lose their signatures. Use
+`gh arriba`, which rebases locally with your signing key and pushes with a lease. Add `--remote` for
+the server-side rebase:
+
+```bash
+gh arriba pr rebase {pr-number}
+```
+
+## Asking Dependabot to rebase
+
+`gh arriba` comments `@dependabot rebase` on each PR, and prompts for which ones when given none:
+
+```bash
+gh arriba dependabot rebase {pr-number}...   # or --all
+```
+
 ## Downloading workflow job logs
 
 `gh run view --log` can be unreliable for large logs. Download job logs to files for searching. It takes a run ID, a job ID, or an Actions URL, and prints the path of each log:
