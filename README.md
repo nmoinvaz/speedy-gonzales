@@ -34,6 +34,7 @@ Claude Code marketplace plugin that speeds up everyday dev workflows.
 | `/acli` | Common Atlassian CLI (`acli`) commands for Jira |
 | `/extract-asm` | Extract function assembly from an object or assembly file |
 | `/gh` | GitHub CLI (`gh`) tips and workarounds |
+| `/graph-data` | House style and shared SVG primitives for Python-rendered data graphs |
 | `/testrail` | Interact with the TestRail Test Management API |
 
 ## Requirements
