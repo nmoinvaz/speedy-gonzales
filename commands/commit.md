@@ -46,4 +46,4 @@ allowed-tools: Bash
 9. Show the result of the commit and push
 
 10. **Create GitHub PR**:
-   - Use the `gh-pr` command to create a PR with labels and reviewer assignment
+   - Ask if the user wants a PR, then push the branch if needed and run `gh pr create`

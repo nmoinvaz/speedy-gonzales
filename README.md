@@ -23,7 +23,6 @@ gh extension install nmoinvaz/gh-arriba
 | `/commit` | Full commit workflow with branch creation and PR |
 | `/comment-cleanup` | Walk through changed comments and pick a writing variation |
 | `/fixup` | Apply staged changes to a previous commit |
-| `/gh-pr` | Create a PR with labels and reviewer |
 | `/gh-pr-fix` | Verify and fix unresolved PR review comments |
 | `/gh-release` | Trigger a GitHub release workflow |
 | `/dependabot-merge` | Interactively review and merge Dependabot PRs |
