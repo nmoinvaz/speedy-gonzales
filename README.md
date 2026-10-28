@@ -16,6 +16,14 @@ installs it at the start of a session when it is missing, or install it yourself
 gh extension install nmoinvaz/gh-arriba
 ```
 
+The Jira commands call the [jira-arriba](https://github.com/nmoinvaz/jira-arriba) CLI. Download it
+from its [releases](https://github.com/nmoinvaz/jira-arriba/releases) and put it on your `PATH`, or
+build it:
+
+```bash
+cargo install --git https://github.com/nmoinvaz/jira-arriba
+```
+
 ## Commands
 
 | Command | Description |
@@ -34,16 +42,16 @@ gh extension install nmoinvaz/gh-arriba
 
 | Skill | Description |
 |-------|-------------|
-| `/acli` | Common Atlassian CLI (`acli`) commands for Jira |
 | `/extract-asm` | Extract function assembly from an object or assembly file |
 | `/gh` | GitHub CLI (`gh`) tips and workarounds |
 | `/graph-data` | House style and shared SVG primitives for Python-rendered data graphs |
+| `/jira-arriba` | Jira CLI (`jira-arriba`) commands for issues, JQL, transitions, attachments, and Markdown comments |
 | `/testrail` | Interact with the TestRail Test Management API |
 
 ## Requirements
 
 - [GitHub CLI](https://cli.github.com/) (`gh`) - most commands
 - [gh-arriba](https://github.com/nmoinvaz/gh-arriba) extension - GitHub and Dependabot commands, installed automatically
-- [Atlassian MCP](https://www.atlassian.com/) - Jira integration (optional)
-- [Atlassian CLI](https://developer.atlassian.com/cloud/acli/) (`acli`) - `/acli` skill (optional)
+- [jira-arriba](https://github.com/nmoinvaz/jira-arriba) - Jira commands and the `/jira-arriba` skill (optional)
+- [Atlassian CLI](https://developer.atlassian.com/cloud/acli/) (`acli`) - the login `jira-arriba` uses unless `JIRA_*` variables are set (optional)
 - [TestRail](https://www.testrail.com/) API access - `/testrail` skill (optional)
