@@ -14,7 +14,7 @@ $ARGUMENTS should be a Jira URL (e.g., https://company.atlassian.net/browse/PROJ
 
 ## Instructions
 
-Use `acli` for all Jira operations. Before any Jira operations, load the `/arriba:acli` skill for command syntax reference and verify that `acli` is authenticated by running `acli jira auth status`. If not authenticated, tell the user to run `acli jira auth login --web` and stop.
+Use `jira-arriba` for all Jira operations. Before any Jira operations, load the `/arriba:jira-arriba` skill for command syntax reference. It shows whether `jira-arriba` is installed and logged in. If either is missing, follow the skill's instructions to the user and stop.
 
 1. **Extract issue key from argument**:
    - If $ARGUMENTS is a URL, extract the issue key from the `/browse/` part
@@ -22,12 +22,12 @@ Use `acli` for all Jira operations. Before any Jira operations, load the `/arrib
    - Validate the key format (should be PROJECT-NUMBER format)
 
 2. **Fetch issue details**:
-   Get full issue details including summary, description, status, priority, components, and labels.
+   `jira-arriba issue view {issue-key}` prints the summary, status, priority, components, labels, description, and comments with rich text as Markdown. Add `--json` when a field needs parsing.
 
-3. **Fetch issue comments** for additional context.
+3. **Read the comments** in that output for additional context, or list them alone with `jira-arriba issue comment list {issue-key}`.
 
 4. **Download attachments**:
-   Run the `/arriba:jira-download-attachments` skill with the issue key to download all attachments and inline media. Review downloaded files (screenshots, logs, etc.) for additional context about the bug.
+   Run the `/arriba:jira-download-attachments` command with the issue key to download all attachments and inline media. Review downloaded files (screenshots, logs, etc.) for additional context about the bug.
 
 5. **Display bug summary to user**:
    Present a clear summary of the bug:
@@ -46,7 +46,7 @@ Use `acli` for all Jira operations. Before any Jira operations, load the `/arrib
    ```
 
 6. **Search for similar issues**:
-   Extract key terms from the summary and description, then search for related issues using JQL:
+   Extract key terms from the summary and description, then search for related issues with `jira-arriba issue search --jql '...' --fields key,summary,status,resolutiondate`:
    - Search by text: `text ~ "{key-terms}" AND key != {issue-key}`
    - Search by component: `component = {component} AND key != {issue-key}`
    - Search recently resolved: `text ~ "{key-terms}" AND status in (Resolved, Done, Closed) AND resolved >= -30d`
@@ -151,12 +151,12 @@ Use `acli` for all Jira operations. Before any Jira operations, load the `/arrib
 
 13. **Update Jira issue** (ask for permission first):
     - Ask user: "Would you like me to add a comment to the Jira issue?"
-    - If yes, add a comment with a brief description of the fix, files changed, and link to commit
+    - If yes, write the comment in Markdown with a brief description of the fix, the files changed, and a link to the commit, and post it with `jira-arriba issue comment add {issue-key} --file comment.md`
 
 14. **Ask about status transition**:
     - Ask user: "Would you like to transition this issue?"
-    - Show available transitions and let user choose (e.g., "In Progress", "In Review", "Done")
-    - Transition the issue to the chosen status
+    - Show the transitions from `jira-arriba issue transition {issue-key} --list` and let the user choose (e.g., "In Progress", "In Review", "Done")
+    - Move the issue with `jira-arriba issue transition {issue-key} --status "{status}"`
 
 ## Important Notes
 
