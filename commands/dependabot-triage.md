@@ -102,11 +102,13 @@ After handling each alert (merged, dismissed, or skipped), search Jira for a rel
 IMPORTANT: Use `summary ~` instead of `text ~` because Jira's `text` field tokenizes CVE IDs
 (hyphens + numbers) incorrectly and returns no results. The `summary` field works reliably.
 
-First, search for the CVE and repo name together in the summary field. If no results, try a broader search with just the CVE.
+First, search for the alert's identifier and repo name together in the summary field, using the CVE, or the GHSA ID when `cve` is null. If no results, try a broader search with just the identifier, then one with the package name.
 
 ```bash
 jira-arriba issue search --jql 'summary ~ "CVE-2024-1234" AND summary ~ "repo-name"' --fields key,summary,status --json
 jira-arriba issue search --jql 'summary ~ "CVE-2024-1234"' --fields key,summary,status --json
+jira-arriba issue search --jql 'summary ~ "GHSA-xxxx-xxxx-xxxx" AND summary ~ "repo-name"' --fields key,summary,status --json
+jira-arriba issue search --jql 'summary ~ "package-name" AND summary ~ "repo-name" AND status not in (Resolved, Done, Closed)' --fields key,summary,status --json
 ```
 
 Filter the results to find tickets that are not already Resolved/Done/Closed.
@@ -115,12 +117,12 @@ Filter the results to find tickets that are not already Resolved/Done/Closed.
 
 ## Step 6: If a Jira ticket is found
 
-Show me the ticket key, summary, and current status. Then ask me if I want to transition it to Resolved.
+Show me the ticket key, summary, and current status. If the alert was skipped, stop here and leave the ticket as it is. Otherwise ask me if I want to transition it to Resolved.
 
 If I confirm:
-1. Add a comment to the ticket describing the action taken:
+1. Add a comment to the ticket describing what happened, "was merged" for a merged PR or "was dismissed as <reason>" for a dismissal:
    ```bash
-   jira-arriba issue comment add <TICKET-KEY> "Dependabot alert #N (package CVE-ID) was merged/dismissed in GitHub. Triaged via Claude Code."
+   jira-arriba issue comment add <TICKET-KEY> "Dependabot alert #N (package CVE-ID) was dismissed as not_used in GitHub. Triaged via Claude Code."
    ```
 2. Transition the issue:
    ```bash

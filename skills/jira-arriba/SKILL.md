@@ -141,11 +141,17 @@ jira-arriba adf from-md comment.md
 jira-arriba adf to-md issue.json
 ```
 
-For a REST call jira-arriba has no command for, print the Authorization header it uses:
+For a REST call jira-arriba has no command for, reuse its login. The acli login is OAuth, which
+Atlassian only accepts through its gateway with the site's cloud ID, and `@<(...)` keeps the header
+out of the process list:
 
 ```bash
-curl -sS -H "$(jira-arriba auth token --header)" "https://mysite.atlassian.net/rest/api/3/myself"
+CLOUD_ID=$(jira-arriba auth status --json | jq -r .cloudId)
+curl -sS -H @<(jira-arriba auth token --header) \
+  "https://api.atlassian.com/ex/jira/$CLOUD_ID/rest/api/3/myself"
 ```
+
+With a `JIRA_API_TOKEN` login the header is basic auth and the base is `https://<site>/rest/api/3`.
 
 ## Notifications
 
