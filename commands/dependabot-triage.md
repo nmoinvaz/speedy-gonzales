@@ -120,9 +120,9 @@ Filter the results to find tickets that are not already Resolved/Done/Closed.
 Show me the ticket key, summary, and current status. If the alert was skipped, stop here and leave the ticket as it is. Otherwise ask me if I want to transition it to Resolved.
 
 If I confirm:
-1. Add a comment to the ticket describing what happened, "was merged" for a merged PR or "was dismissed as <reason>" for a dismissal:
+1. Add a comment to the ticket describing what happened, filling in the alert number, package, the CVE or GHSA ID used in the search, and the outcome, `was merged` for a merged PR or `was dismissed as <reason>` for a dismissal:
    ```bash
-   jira-arriba issue comment add <TICKET-KEY> "Dependabot alert #N (package CVE-ID) was dismissed as not_used in GitHub. Triaged via Claude Code."
+   jira-arriba issue comment add <TICKET-KEY> "Dependabot alert #<N> (<package> <CVE-or-GHSA>) <was merged|was dismissed as <reason>> in GitHub. Triaged via Claude Code."
    ```
 2. Transition the issue:
    ```bash
