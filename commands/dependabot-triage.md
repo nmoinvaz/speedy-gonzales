@@ -11,11 +11,9 @@ Follow these steps carefully for each open alert. Do not batch — handle them o
 
 ---
 
-## Step 0: Verify acli authentication
+## Step 0: Verify the Jira login
 
-Before any Jira operations, verify that `acli` is authenticated by running `acli jira auth status`. If not authenticated, tell the user to run `acli jira auth login --web` and stop.
-
-Refer to the `acli` skill for command syntax reference.
+Before any Jira operations, load the `/arriba:jira-arriba` skill for command syntax reference. It shows whether `jira-arriba` is installed and logged in. If either is missing, follow the skill's instructions to the user and stop.
 
 ---
 
@@ -106,6 +104,11 @@ IMPORTANT: Use `summary ~` instead of `text ~` because Jira's `text` field token
 
 First, search for the CVE and repo name together in the summary field. If no results, try a broader search with just the CVE.
 
+```bash
+jira-arriba issue search --jql 'summary ~ "CVE-2024-1234" AND summary ~ "repo-name"' --fields key,summary,status --json
+jira-arriba issue search --jql 'summary ~ "CVE-2024-1234"' --fields key,summary,status --json
+```
+
 Filter the results to find tickets that are not already Resolved/Done/Closed.
 
 ---
@@ -115,8 +118,14 @@ Filter the results to find tickets that are not already Resolved/Done/Closed.
 Show me the ticket key, summary, and current status. Then ask me if I want to transition it to Resolved.
 
 If I confirm:
-1. Add a comment to the ticket describing the action taken (e.g., "Dependabot alert #N (package CVE-ID) was merged/dismissed in GitHub. Triaged via Claude Code.")
-2. Transition the issue to "Resolved"
+1. Add a comment to the ticket describing the action taken:
+   ```bash
+   jira-arriba issue comment add <TICKET-KEY> "Dependabot alert #N (package CVE-ID) was merged/dismissed in GitHub. Triaged via Claude Code."
+   ```
+2. Transition the issue:
+   ```bash
+   jira-arriba issue transition <TICKET-KEY> --status Resolved
+   ```
 
 Only transition if I confirm.
 
