@@ -35,7 +35,7 @@ cargo install --git https://github.com/nmoinvaz/jira-arriba
 | `/gh-release` | Trigger a GitHub release workflow |
 | `/dependabot-merge` | Interactively review and merge Dependabot PRs |
 | `/dependabot-triage` | Triage Dependabot security alerts |
-| `/jira-fix-bug` | Fix a bug from a Jira issue |
+| `/fix-bug` | Fix a bug from a Jira issue |
 | `/jira-download-attachments` | Download all attachments and inline media from a Jira ticket |
 
 ## Skills
