@@ -1,5 +1,5 @@
 ---
-name: jira-fix-bug
+name: fix-bug
 description: Fetch a Jira bug report and attempt to fix it
 argument-hint: "[Jira URL or issue key]"
 model: opus
