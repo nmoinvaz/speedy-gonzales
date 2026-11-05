@@ -36,7 +36,6 @@ cargo install --git https://github.com/arriba-tools/testrail
 
 | Command | Description |
 |---------|-------------|
-| `/commit` | Full commit workflow with branch creation and PR |
 | `/comment-cleanup` | Walk through changed comments and pick a writing variation |
 | `/fixup` | Apply staged changes to a previous commit |
 | `/gh-pr-fix` | Verify and fix unresolved PR review comments |
