@@ -50,7 +50,7 @@ cargo install --git https://github.com/arriba-tools/testrail
 | Skill | Description |
 |-------|-------------|
 | `/extract-asm` | Extract function assembly from an object or assembly file |
-| `/gh` | GitHub CLI (`gh`) tips and workarounds |
+| `/gh-arriba` | GitHub extension (`gh arriba`) commands for review threads, pending reviews, checks, rebases, releases, and Dependabot |
 | `/graph-data` | House style and shared SVG primitives for Python-rendered data graphs |
 | `/jira-arriba` | Jira CLI (`jira-arriba`) commands for issues, JQL, transitions, attachments, and Markdown comments |
 | `/testrail` | TestRail CLI (`testrail-arriba`) commands for plans, runs, tests, cases, and results with per-step screenshots |
@@ -58,7 +58,7 @@ cargo install --git https://github.com/arriba-tools/testrail
 ## Requirements
 
 - [GitHub CLI](https://cli.github.com/) (`gh`) - most commands
-- [gh-arriba](https://github.com/arriba-tools/gh) extension - GitHub and Dependabot commands, installed automatically
+- [gh-arriba](https://github.com/arriba-tools/gh) extension - GitHub and Dependabot commands and the `/gh-arriba` skill, installed automatically
 - [jira-arriba](https://github.com/arriba-tools/jira) - Jira commands and the `/jira-arriba` skill (optional)
 - [Atlassian CLI](https://developer.atlassian.com/cloud/acli/) (`acli`) - the login `jira-arriba` uses unless `JIRA_*` variables are set (optional)
 - [testrail-arriba](https://github.com/arriba-tools/testrail) - `/testrail` skill (optional)
