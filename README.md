@@ -24,6 +24,14 @@ build it:
 cargo install --git https://github.com/nmoinvaz/jira-arriba
 ```
 
+The TestRail skill calls the [testrail-arriba](https://github.com/arriba-tools/testrail) CLI.
+Download it from its [releases](https://github.com/arriba-tools/testrail/releases) and put it on
+your `PATH`, or build it:
+
+```bash
+cargo install --git https://github.com/arriba-tools/testrail
+```
+
 ## Commands
 
 | Command | Description |
@@ -46,7 +54,7 @@ cargo install --git https://github.com/nmoinvaz/jira-arriba
 | `/gh` | GitHub CLI (`gh`) tips and workarounds |
 | `/graph-data` | House style and shared SVG primitives for Python-rendered data graphs |
 | `/jira-arriba` | Jira CLI (`jira-arriba`) commands for issues, JQL, transitions, attachments, and Markdown comments |
-| `/testrail` | Interact with the TestRail Test Management API |
+| `/testrail` | TestRail CLI (`testrail-arriba`) commands for plans, runs, tests, cases, and results with per-step screenshots |
 
 ## Requirements
 
@@ -54,4 +62,4 @@ cargo install --git https://github.com/nmoinvaz/jira-arriba
 - [gh-arriba](https://github.com/nmoinvaz/gh-arriba) extension - GitHub and Dependabot commands, installed automatically
 - [jira-arriba](https://github.com/nmoinvaz/jira-arriba) - Jira commands and the `/jira-arriba` skill (optional)
 - [Atlassian CLI](https://developer.atlassian.com/cloud/acli/) (`acli`) - the login `jira-arriba` uses unless `JIRA_*` variables are set (optional)
-- [TestRail](https://www.testrail.com/) API access - `/testrail` skill (optional)
+- [testrail-arriba](https://github.com/arriba-tools/testrail) - `/testrail` skill (optional)
