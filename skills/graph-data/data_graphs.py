@@ -1,7 +1,7 @@
 """Shared SVG drawing primitives for data graphs.
 
 Canonical copy: skills/graph-data/data_graphs.py in
-github.com/nmoinvaz/speedy-gonzales. Projects vendor this file next to their
+github.com/arriba-tools/speedy-gonzales. Projects vendor this file next to their
 graph scripts, edit the canonical copy and copy it back out rather than
 changing a vendored one. Standard library only.
 

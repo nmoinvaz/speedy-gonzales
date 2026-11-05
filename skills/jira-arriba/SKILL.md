@@ -6,7 +6,7 @@ allowed-tools: Bash(jira-arriba --version), Bash(jira-arriba auth status)
 
 # jira-arriba Quick Reference
 
-[jira-arriba](https://github.com/nmoinvaz/jira-arriba) is the CLI this project's Jira workflows use.
+[jira-arriba](https://github.com/arriba-tools/jira) is the CLI this project's Jira workflows use.
 It takes Markdown wherever Jira wants rich text and converts it to ADF, so comments and descriptions
 are never written as JSON by hand.
 
@@ -19,8 +19,8 @@ Installed version and login:
 !`jira-arriba auth status 2>&1 || true`
 
 If it is not installed, tell the user to download it from the
-[releases](https://github.com/nmoinvaz/jira-arriba/releases) and put it on the `PATH`, or run
-`cargo install --git https://github.com/nmoinvaz/jira-arriba`, and stop.
+[releases](https://github.com/arriba-tools/jira/releases) and put it on the `PATH`, or run
+`cargo install --git https://github.com/arriba-tools/jira`, and stop.
 
 If there is no login, tell the user to run `jira-arriba auth login`, which signs in through acli in
 the browser and offers to install acli when it is missing, and stop. `JIRA_API_TOKEN`, `JIRA_EMAIL`,
